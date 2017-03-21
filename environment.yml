@@ -1,0 +1,14 @@
+name: SteamyReviews
+dependencies:
+  - python=2.7
+  - numpy
+  - pandas
+  - beautiful-soup
+  - matplotlib
+  - jupyter
+  - nltk
+  - ipykernel
+  - conda-forge::python-levenshtein
+  - scikit-learn
+  - requests
+  - unicodecsv
