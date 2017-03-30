@@ -20,6 +20,7 @@ review_to_score = {
     "Very Negative": 1,
     "Overwhelmingly Negative": 0
 }
+average = {}
 
 def create_dicts_from_file(f):
     global tags_to_rating_sum
@@ -35,18 +36,41 @@ def process_games(f):
     global tags_to_count
     global tags_to_rating_sum
     games = json.load(f)
-    for game in games[:10]:
+    overall_re = r'Overall:([A-Za-z ]+)'
+    for game in games:
         link = baseString + game['app_id']
         page = requests.get(link)
         soup = BeautifulSoup(page.text, "lxml")
+        #for tag in tags_section.find_all("a"):
+
         overall_section = soup.find_all("div", class_="summary_section")
         #print(overall_section)
         if len(overall_section) == 0:
             continue
         for rating in overall_section:
-            if (rating.text.find("Overall")):
+            if (rating.text.find("Overall") > 0):
                 rating2 = rating.text.replace("\n", "").strip()
-                print(rating2)
+                match = re.match(overall_re, rating2)
+                review = match.groups()[0]
+                score = review_to_score[review]
+                tags_section = soup.find("div", class_="glance_tags popular_tags")
+                #print(tags_section.find_all("a"))
+                if (len(tags_section) == 0):
+                    continue
+                for tag in tags_section.find_all("a"):
+                    trimmed_tag = tag.text.replace("\r", "").replace("\n", "").replace("\t", "").strip()
+                    if trimmed_tag in tags_to_count:
+                        tags_to_count[trimmed_tag] += 1
+                        tags_to_rating_sum[trimmed_tag] += score
+
+def average_reviews():
+    global tags_to_count
+    global tags_to_rating_sum
+    global average
+    for key in tags_to_count:
+        average[key] = tags_to_rating_sum[key] / tags_to_count[key]
+    with open("../../reviews.json", "w") as f:
+        json.dump(average, f, indent=2)
 
 
 if __name__ == "__main__":
