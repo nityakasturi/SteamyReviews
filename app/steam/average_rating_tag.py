@@ -37,7 +37,7 @@ def process_games(f):
     global tags_to_rating_sum
     games = json.load(f)
     overall_re = r'Overall:([A-Za-z ]+)'
-    for game in games:
+    for game in games[:1000]:
         link = baseString + game['app_id']
         page = requests.get(link)
         soup = BeautifulSoup(page.text, "lxml")
@@ -45,7 +45,7 @@ def process_games(f):
 
         overall_section = soup.find_all("div", class_="summary_section")
         #print(overall_section)
-        if len(overall_section) == 0:
+        if overall_section is None or len(overall_section) == 0:
             continue
         for rating in overall_section:
             if (rating.text.find("Overall") > 0):
@@ -55,7 +55,7 @@ def process_games(f):
                 score = review_to_score[review]
                 tags_section = soup.find("div", class_="glance_tags popular_tags")
                 #print(tags_section.find_all("a"))
-                if (len(tags_section) == 0):
+                if (tags_section is None or len(tags_section) ==  0):
                     continue
                 for tag in tags_section.find_all("a"):
                     trimmed_tag = tag.text.replace("\r", "").replace("\n", "").replace("\t", "").strip()
@@ -68,8 +68,9 @@ def average_reviews():
     global tags_to_rating_sum
     global average
     for key in tags_to_count:
-        average[key] = tags_to_rating_sum[key] / tags_to_count[key]
-    with open("../../reviews.json", "w") as f:
+        if (tags_to_count[key] > 0):
+            average[key] = tags_to_rating_sum[key] / tags_to_count[key]
+    with open("../../ratings_per_tag.json", "w") as f:
         json.dump(average, f, indent=2)
 
 
@@ -78,3 +79,4 @@ if __name__ == "__main__":
         create_dicts_from_file(f)
     with open("../../data/app_ids.json", 'r') as g:
         process_games(g)
+        average_reviews()
