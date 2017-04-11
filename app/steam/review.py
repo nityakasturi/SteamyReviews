@@ -1,9 +1,10 @@
-from __future__ import print_function, division
+from __future__ import print_function, division, unicode_literals
 
 import requests
 import re
 
 from bs4 import BeautifulSoup
+from nltk.tokenize import word_tokenize
 
 people_re_part = "(?:person|people)"
 helpful_re = re.compile("(-?[0-9,]+) of ([0-9,]+) " + people_re_part)
@@ -104,6 +105,28 @@ class Review(object):
         self.on_record = on_record
         self.num_owned_games = num_owned_games
         self.num_reviews = num_reviews
+
+    def get_tokens(self):
+        punc_regex = r'[!\"#\$%&\'\(\)\*\+,-\./:;<=>\?@\[\\\]\^_`{\|}~]+'
+        # excludes situations such as boy-friend/girl-friend - but inconsequential
+        token_re = r'([a-z0-9]+((-|/)[a-z0-9]+)?)'
+        
+        review_str = self.body.encode('ascii','ignore')
+        tokens = word_tokenize(review_str)
+        filtered_tokens = []
+        for token in tokens:
+            lower_token = str.lower(token)
+            match = re.match(token_re, lower_token)
+            
+            # verify that the regex matches the whole token
+            if match != None and match.group(0) == lower_token:
+                if '/' in lower_token:
+                    for elem in lower_token.split('/'):
+                        filtered_tokens.append(elem)
+                else:
+                    filtered_tokens.append(lower_token)
+                    
+        return filtered_tokens
 
 def get_app_reviews(app_id, max_reviews=1000, filter="all", language="english"):
     reviews = dict()
