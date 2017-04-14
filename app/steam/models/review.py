@@ -3,7 +3,9 @@ from __future__ import print_function, division, unicode_literals
 import requests
 import re
 
+from . import db
 from bs4 import BeautifulSoup
+from datetime import datetime
 from nltk.tokenize import word_tokenize
 
 people_re_part = "(?:person|people)"
@@ -13,7 +15,8 @@ on_record_re = re.compile("(-?[0-9,]+\.?\d*) hrs? on record")
 products_re = re.compile("(-?[0-9,]+) products? in account")
 reviews_re = re.compile("(-?[0-9,]+) reviews?")
 
-class Review(object):
+class Review(db.Model):
+
     @classmethod
     def from_review_soup(cnstr, app_id, review_id, review_soup):
         def find_div_text(div_class, sep="\n", strip=True):
@@ -35,7 +38,8 @@ class Review(object):
 
         body = find_div_text("content") or ""
         reviewer = find_div_text("persona_name") or ""
-        date = find_div_text("postedDate") or ""
+        date = datetime.strptime(find_div_text("postedDate") or "Posted: July 20, 1969",
+                                 "Posted: %B %d, %Y")
 
         helpful, total, funny = 0, 0, 0
         header = find_div_text("header")
@@ -89,35 +93,43 @@ class Review(object):
                      num_owned_games=num_owned_games,
                      num_reviews=num_reviews)
 
-    def __init__(self, review_id, app_id, reviewer_id, reviewer, body, date,
+    app_id = db.Column(db.Integer)
+    review_id = db.Column(db.Integer, primary_key=True)
+    review_date = db.Column(db.Date)
+    review = db.Column(db.JSON, none_as_null=True)
+
+    def __init__(self, review_id, app_id, reviewer_id, reviewer, body, review_date,
                  helpful, total, funny, is_recommended, on_record,
                  num_owned_games, num_reviews):
-        self.review_id = review_id
         self.app_id = app_id
-        self.reviewer_id = reviewer_id
-        self.reviewer = reviewer
-        self.body = body
-        self.date = date
-        self.helpful = helpful
-        self.total = total
-        self.funny = funny
-        self.is_recommended = is_recommended
-        self.on_record = on_record
-        self.num_owned_games = num_owned_games
-        self.num_reviews = num_reviews
+        self.review_id = review_id
+        self.review_date = review_date
+        self.review = {
+            "reviewer_id": reviewer_id,
+            "reviewer": reviewer,
+            "body": body,
+            "helpful": helpful,
+            "total": total,
+            "funny": funny,
+            "is_recommended": is_recommended,
+            "on_record": on_record,
+            "num_owned_games": num_owned_games,
+            "num_reviews": num_reviews
+        }
+
 
     def get_tokens(self):
         punc_regex = r'[!\"#\$%&\'\(\)\*\+,-\./:;<=>\?@\[\\\]\^_`{\|}~]+'
         # excludes situations such as boy-friend/girl-friend - but inconsequential
         token_re = r'([a-z0-9]+((-|/)[a-z0-9]+)?)'
-        
+
         review_str = self.body.encode('ascii','ignore')
         tokens = word_tokenize(review_str)
         filtered_tokens = []
         for token in tokens:
             lower_token = str.lower(token)
             match = re.match(token_re, lower_token)
-            
+
             # verify that the regex matches the whole token
             if match != None and match.group(0) == lower_token:
                 if '/' in lower_token:
@@ -125,7 +137,7 @@ class Review(object):
                         filtered_tokens.append(elem)
                 else:
                     filtered_tokens.append(lower_token)
-                    
+
         return filtered_tokens
 
 def get_app_reviews(app_id, max_reviews=1000, filter="all", language="english"):
