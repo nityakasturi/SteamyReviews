@@ -173,6 +173,9 @@ class Review(object):
         json = self.to_json()
         # str here is ghetto af but it's the only way not to get rounding errors apaprently
         json["on_record"] = decimal.Decimal(str(self.on_record))
+        for k in json:
+            if json[k] == "":
+                json[k] = None
         return json
 
     def save(self):
@@ -250,14 +253,8 @@ if __name__ == '__main__':
         for i in xrange(len(reviews[app_id])):
             r = Review.from_json(reviews[app_id][i])
             reviews[app_id][i] = r
-            if r.review_date.year == 1900:
-                r.review_date = r.review_date.replace(year=datetime.now().year)
-
-    for app_id in reviews:
-        for r in reviews[app_id]:
             try:
                 r.save()
             except Exception as e:
                 print(r.to_dynamo_json())
                 raise e
-
