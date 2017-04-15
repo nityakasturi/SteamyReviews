@@ -42,8 +42,8 @@ def get_tags():
     tag_soups = soup.find_all("div", class_="span4")
     return map(Tag.from_tag_soup, tag_soups)
 
-if __name__ == '__main__':
-    tags = get_tags()
-    with open(os.path.join(data_dir, "tags.json"), "w") as f:
-        json.dump(tags, f, default=lambda o: o.__dict__, indent=2)
+# if __name__ == '__main__':
+#     tags = get_tags()
+#     with open(os.path.join(data_dir, "tags.json"), "w") as f:
+#         json.dump(tags, f, default=lambda o: o.__dict__, indent=2)
 
