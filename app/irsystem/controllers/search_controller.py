@@ -1,11 +1,11 @@
-from . import * 
+from . import *
 from app.irsystem.models.matrix import Matrix
-from app.irsystem.models.redisconn import RedisConn as RedisConn 
+from app.irsystem.models.redisconn import RedisConn as RedisConn
 from app.irsystem.models.helpers import *
 from app.irsystem.models.helpers import NumpyEncoder as NumpyEncoder
 
-project_name = "Ilan's Cool Project Template"
-net_id = "Ilan Filonenko: if56"
+project_name = "Steamy Reviews"
+net_id = ""
 
 @irsystem.route('/', methods=['GET'])
 def search():
