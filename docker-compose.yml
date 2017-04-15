@@ -1,0 +1,33 @@
+version: "2"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile-python
+    command: python run.py
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/root/SteamyReviews
+    links:
+      - postgres
+      - dynamodb
+    environment:
+      - APP_SETTINGS=config.DevelopmentConfig
+      - DATABASE_URL=postgres://test:test@postgres:5432/test
+      - DYNAMO_REGION=us-west-2
+      - DYNAMO_URL=http://dynamodb:8000
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+  postgres:
+    image: postgres:9.6.1
+    environment:
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_USER=test
+      - POSTGRES_DB=test
+  dynamodb:
+    build:
+      context: .
+      dockerfile: Dockerfile-dynamodb
+    expose:
+      - "8000"

@@ -12,3 +12,4 @@ dependencies:
   - scikit-learn
   - requests
   - unicodecsv
+  - boto3

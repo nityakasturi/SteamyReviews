@@ -4,22 +4,24 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 # Different environments for the app to run in
 
 class Config(object):
-  DEBUG = False
-  CSRF_ENABLED = True
-  CSRF_SESSION_KEY = "secret"
-  SECRET_KEY = "not_this"
-  SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
+    DEBUG = False
+    CSRF_ENABLED = True
+    CSRF_SESSION_KEY = "secret"
+    SECRET_KEY = "not_this"
+    SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
+    DYNAMO_REGION = os.environ["DYNAMO_REGION"]
+    DYNAMO_DATABASE_URI = os.environ["DYNAMO_URL"]
 
 class ProductionConfig(Config):
-  DEBUG = False
+    DEBUG = False
 
 class StagingConfig(Config):
-  DEVELOPMENT = True
-  DEBUG = True
+    DEVELOPMENT = True
+    DEBUG = True
 
 class DevelopmentConfig(Config):
-  DEVELOPMENT = True
-  DEBUG = True
+    DEVELOPMENT = True
+    DEBUG = True
 
 class TestingConfig(Config):
-  TESTING = True
+    TESTING = True
