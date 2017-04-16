@@ -1,12 +1,13 @@
 from __future__ import print_function, division
 
-import json
 import requests
 import re
 
+from . import Review
 from app.dynamodb import dynamodb
 from app.dynamodb.utils import create_dynamo_table, STRING, NUMBER
 from bs4 import BeautifulSoup
+from boto3.dynamodb.conditions import Key
 from decimal import Decimal
 
 review_to_score = {
@@ -40,14 +41,30 @@ class Game(object):
                    name=columns[2])
 
     @classmethod
-    def from_json(cls, json):
-        return cls(**json)
+    def from_json(cls, game_json):
+        return cls(**game_json)
+
+    @classmethod
+    def from_dynamo_json(cls, dynamo_json):
+        dynamo_json["price"] = float(dynamo_json["price"])
+        return cls(**dynamo_json)
 
     @classmethod
     def batch_save(cls, games):
         with cls.table.batch_writer() as batch:
             for g in games:
                 batch.put_item(Item=g.to_json())
+
+    @classmethod
+    def get_all(cls):
+        response = Review.table.scan()
+        results = map(cls.from_dynamo_json, response["Items"])
+        while "LastEvaluatedKey" in response:
+            response = Review.table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            results += map(cls.from_dynamo_json, response["Items"])
+        return results
+
+        cls.from_dynamo_json(cls.table.get_item())
 
     def __init__(self, app_id, name, developer, publisher, owners, score_rank, price, tags):
         self.app_id = app_id
@@ -56,22 +73,34 @@ class Game(object):
         self.publisher = publisher
         self.owners = owners
         self.score_rank = score_rank
-        self.price = float(price) / 100 # price is in cents
+        self.price = price
         self.tags = tags
 
     def to_json(self):
         return self.__dict__.copy()
 
     def to_dynamo_json(self):
-        json = self.to_json()
-        json["price"] = Decimal(str(self.price))
-        return json
+        dynamo_json = self.to_json()
+        dynamo_json["price"] = Decimal(str(self.price))
+        return dynamo_json
 
     def save(self):
         Game.table.put_item(Item=self.to_json())
 
+    def fetch_more_reviews(self):
+        Review.batch_save(Review.fetch_new_reviews(self.app_id))
+
+    def get_saved_reviews(self, key_condition, filter_expression):
+        primary_condition = Key(Review.hash_key).eq(self.app_id)
+        if key_condition is not None:
+            primary_condition = primary_condition & key_condition
+        return Review.get(primary_condition, filter_expression)
+
+    def update_rating(self):
+        pass
+
 def iter_all_games():
-    games_json = json.loads(requests.get("http://steamspy.com/api.php?request=all").text)
+    games_json = requests.get("http://steamspy.com/api.php?request=all").json()
     for app_id, game in games_json.iteritems():
         if app_id == "999999":
             continue
@@ -88,10 +117,11 @@ def iter_all_games():
         del game["ccu"]
 
         game["app_id"] = int(app_id)
+        game["price"] = float(game["price"]) / 100 # price is in cents
         # flip the key/value so it matches better with the other data structures
         tags = {id: name for name, id in game["tags"]}
         game["tags"] = tags
-        yield Game(**game)
+        yield Game.from_json(game)
 
 def get_app_ids_from_graph_page():
     graph = requests.get("https://steamdb.info/graph/")

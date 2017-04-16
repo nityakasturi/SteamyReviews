@@ -27,14 +27,14 @@ app.register_blueprint(accounts)
 from app.irsystem import irsystem as irsystem
 app.register_blueprint(irsystem)
 
-from app.steam.models import review
-review.Review.create_table()
+from app.steam.models import Review
+Review.create_table()
 
-from app.steam.models import tag
-tag.Tag.create_table()
+from app.steam.models import Tag
+Tag.create_table()
 
-from app.steam.models import game
-game.Game.create_table()
+from app.steam.models import Game
+Game.create_table()
 
 # Initialize app w/SocketIO
 socketio.init_app(app)

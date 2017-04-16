@@ -7,7 +7,7 @@ import requests
 import re
 
 from app.dynamodb import dynamodb
-from app.dynamodb.utils import create_dynamo_table, STRING, NUMBER
+from app.dynamodb.utils import create_dynamo_table, NUMBER
 from app.steam.util import data_dir
 from decimal import Decimal
 
