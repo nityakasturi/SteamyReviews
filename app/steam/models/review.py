@@ -4,7 +4,8 @@ import decimal
 import requests
 import re
 
-from . import dynamodb
+from app.dynamodb import dynamodb
+from app.dynamodb.utils import create_dynamo_table, STRING, NUMBER
 from app.steam.util import data_file
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -20,44 +21,12 @@ reviews_re = re.compile("(-?[0-9,]+) reviews?")
 class Review(object):
     table_name = "reviews"
     table = dynamodb.Table(table_name)
-    hash_key = "app_id"
-    sorting_key = "review_date_review_id"
+    hash_key = ("app_id", NUMBER)
+    sorting_key = ("review_date_review_id", STRING)
 
     @classmethod
     def create_table(cls):
-        review_tables = [table for table in dynamodb.tables.all()
-                               if table.name == Review.table_name]
-        if len(review_tables) != 0:
-            print("Table", Review.table_name, "already exists. Cannot create, skipping.")
-        else:
-            dynamodb.create_table(
-                TableName=Review.table_name,
-                KeySchema=[
-                    {
-                        'AttributeName': Review.hash_key,
-                        'KeyType': 'HASH'
-                    },
-                    {
-                        'AttributeName': Review.sorting_key,
-                        'KeyType': 'RANGE'
-                    }
-                ],
-                AttributeDefinitions=[
-                    {
-                        'AttributeName': Review.hash_key,
-                        'AttributeType': 'N'
-                    },
-                    {
-                        'AttributeName': Review.sorting_key,
-                        'AttributeType': 'S'
-                    },
-
-                ],
-                ProvisionedThroughput={
-                    'ReadCapacityUnits': 5,
-                    'WriteCapacityUnits': 5
-                }
-            )
+        create_dynamo_table(cls.table_name, cls.hash_key, cls.sorting_key)
 
     @classmethod
     def from_review_soup(cls, app_id, review_id, review_soup):
@@ -145,7 +114,14 @@ class Review(object):
     @classmethod
     def from_dynamo_json(cls, dynamo_json):
         dynamo_json["on_record"] = float(dynamo_json["on_record"])
-        return Review.from_json(dynamo_json)
+        return cls.from_json(dynamo_json)
+
+    @classmethod
+    def batch_save(cls, reviews):
+        with cls.table.batch_writer() as batch:
+            for r in reviews:
+                batch.put_item(Item=r.to_dynamo_json())
+
 
     def __init__(self, app_id, review_id, review_date, reviewer_id, reviewer, body, helpful, total,
                  funny, is_recommended, on_record, num_owned_games, num_reviews):
@@ -171,7 +147,7 @@ class Review(object):
 
     def to_dynamo_json(self):
         json = self.to_json()
-        # str here is ghetto af but it's the only way not to get rounding errors apaprently
+        # str here is ghetto af but it's the only way not to get rounding errors
         json["on_record"] = decimal.Decimal(str(self.on_record))
         for k in json:
             if json[k] == "":
@@ -226,9 +202,7 @@ def get_app_reviews(app_id, max_reviews=1000, filter="all", language="english"):
         added = 0
         for review_id, review in zip(json['recommendationids'], review_box):
             if review_id not in reviews:
-                reviews[review_id] = Review.from_review_soup(app_id,
-                                                             review_id,
-                                                             review)
+                reviews[review_id] = Review.from_review_soup(app_id, review_id, review)
                 added += 1
 
         if added == 0:
@@ -243,18 +217,14 @@ def get_app_reviews(app_id, max_reviews=1000, filter="all", language="english"):
             offset += 25
     return reviews.values()
 
-if __name__ == '__main__':
+def saved_review_generator():
     import json
     reviews_file = data_file("reviews.json")
     with open(reviews_file) as f:
         reviews = json.load(f)
-
     for app_id in reviews:
         for i in xrange(len(reviews[app_id])):
-            r = Review.from_json(reviews[app_id][i])
-            reviews[app_id][i] = r
-            try:
-                r.save()
-            except Exception as e:
-                print(r.to_dynamo_json())
-                raise e
+            yield Review.from_json(reviews[app_id][i])
+
+if __name__ == '__main__':
+    Review.batch_save(saved_review_generator())

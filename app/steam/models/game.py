@@ -1,72 +1,104 @@
 from __future__ import print_function, division
 
-import requests
 import json
+import requests
+import re
 
+from app.dynamodb import dynamodb
+from app.dynamodb.utils import create_dynamo_table, STRING, NUMBER
 from bs4 import BeautifulSoup
+from decimal import Decimal
 
-max_page = 750
+review_to_score = {
+    "Overwhelmingly Positive": 8,
+    "Very Positive": 7,
+    "Positive": 6,
+    "Mostly Positive": 5,
+    "Mixed": 4,
+    "Mostly Negative": 3,
+    "Negative": 2,
+    "Very Negative": 1,
+    "Overwhelmingly Negative": 0
+}
+score_to_review = {score: r for r,score in review_to_score.iteritems()}
 
 class Game(object):
+    table_name = "apps"
+    table = dynamodb.Table(table_name)
+    hash_key = ("app_id", NUMBER)
+    sorting_key = None
+
     @classmethod
-    def from_table_row(cnstr, table_row):
+    def create_table(cls):
+        create_dynamo_table(Game.table_name, Game.hash_key, Game.sorting_key)
+
+    @classmethod
+    def from_table_row(cls, table_row):
         columns = map(lambda td: td.get_text(strip=True),
                       table_row.find_all("td"))
-        return cnstr(app_id=columns[1],
-                     name=columns[2],
-                     recent_peak=int(columns[4].replace(",", "")),
-                     max_peak=int(columns[5].replace(",", "")))
+        return cls(app_id=columns[1],
+                   name=columns[2])
 
-    def __init__(self, app_id, name, recent_peak, max_peak):
+    @classmethod
+    def from_json(cls, json):
+        return cls(**json)
+
+    @classmethod
+    def batch_save(cls, games):
+        with cls.table.batch_writer() as batch:
+            for g in games:
+                batch.put_item(Item=g.to_json())
+
+    def __init__(self, app_id, name, developer, publisher, owners, score_rank, price, tags):
         self.app_id = app_id
         self.name = name
-        self.recent_peak = recent_peak
-        self.max_peak = max_peak
+        self.developer = developer
+        self.publisher = publisher
+        self.owners = owners
+        self.score_rank = score_rank
+        self.price = float(price) / 100 # price is in cents
+        self.tags = tags
+
+    def to_json(self):
+        return self.__dict__.copy()
+
+    def to_dynamo_json(self):
+        json = self.to_json()
+        json["price"] = Decimal(str(self.price))
+        return json
+
+    def save(self):
+        Game.table.put_item(Item=self.to_json())
+
+def iter_all_games():
+    games_json = json.loads(requests.get("http://steamspy.com/api.php?request=all").text)
+    for app_id, game in games_json.iteritems():
+        if app_id == "999999":
+            continue
+        del game["appid"]
+        del game["owners_variance"]
+        del game["players_forever"]
+        del game["players_forever_variance"]
+        del game["players_2weeks"]
+        del game["players_2weeks_variance"]
+        del game["average_forever"]
+        del game["average_2weeks"]
+        del game["median_forever"]
+        del game["median_2weeks"]
+        del game["ccu"]
+
+        game["app_id"] = int(app_id)
+        # flip the key/value so it matches better with the other data structures
+        tags = {id: name for name, id in game["tags"]}
+        game["tags"] = tags
+        yield Game(**game)
 
 def get_app_ids_from_graph_page():
-    """
-    It turns out that this method is more reliable plus it gets us more data on
-    current and popular games (and we don't have to do a big scan).
-    """
     graph = requests.get("https://steamdb.info/graph/")
     soup = BeautifulSoup(graph.text, "lxml")
     table = soup.find("table", id="table-apps").find("tbody")
     return sorted(map(Game.from_table_row, table.find_all("tr", class_="app")),
                   key=lambda g: g.name)
 
-def extract_app_ids(page, apps=dict()):
-    """
-    Get the page at https://steamdb.info/apps/page{page_number}/ which contains
-    a list of game ids and titles. Use BeautifulSoup to extract the data into a
-    more useable data structure.
-    """
-    if not 1 <= page_number <= max_pages:
-        msg = "page_number must be between 1 and 750! Was %d"%page_number
-        raise Exception(msg)
-    url = "https://steamdb.info/apps/page%d/"%page_number
-    res = requests.get(url)
-    if not 200 <= res.status_code < 300:
-        msg = "Invalid status code (%d) when fetching page %d"%(res.status_code,
-                                                                page_number)
-        raise Exception(msg)
-    soup = BeautifulSoup(res.text, "lxml").find_all("tr", class_="app")
-    for app in soup:
-        i = app.find_all("i", class_="subinfo")
-        if not (len(i) > 0 and i[0].text == "Game"):
-            continue
-        app_id = app["data-appid"]
-        title = app.find_all("a", class_="b")[0].text
-        apps[app_id] = title
-    return apps
-
-def get_all_pages(max_page=max_page):
-    apps = dict()
-    for page_number in xrange(1, max_pages + 1):
-        extract_app_ids(page_number, apps)
-    with open("app_ids.json", 'w') as f:
-        json.dump(apps, f)
-
 if __name__ == '__main__':
-    games = get_app_ids_from_graph_page()
-    with open("app_ids.json", 'w') as f:
-        json.dump(games, f, default=lambda o: o.__dict__, indent=2)
+    Game.batch_save(iter_all_games())

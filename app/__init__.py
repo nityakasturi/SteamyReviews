@@ -30,6 +30,12 @@ app.register_blueprint(irsystem)
 from app.steam.models import review
 review.Review.create_table()
 
+from app.steam.models import tag
+tag.Tag.create_table()
+
+from app.steam.models import game
+game.Game.create_table()
+
 # Initialize app w/SocketIO
 socketio.init_app(app)
 

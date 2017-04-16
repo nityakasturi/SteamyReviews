@@ -1,49 +1,94 @@
 from __future__ import print_function, division
 
+import csv
 import json
 import os
 import requests
 import re
 
-from bs4 import BeautifulSoup
-from util import data_dir
-
-products_re = re.compile("([0-9,]+) products?")
-tag_id_re = re.compile("/tags/\?tagid=(\w+)")
+from app.dynamodb import dynamodb
+from app.dynamodb.utils import create_dynamo_table, STRING, NUMBER
+from app.steam.util import data_dir
+from decimal import Decimal
 
 class Tag(object):
+    table_name = "tags"
+    table = dynamodb.Table(table_name)
+    hash_key = ("tag_id", NUMBER)
+    sorting_key = ("weight", NUMBER)
+
     @classmethod
-    def from_tag_soup(cnstr, tag_soup):
-        products, title = tag_soup.get_text("\n", strip=True).split("\n")
-        match = products_re.match(products)
-        if match:
-            count, = map(int, match.groups())
+    def create_table(cls):
+        create_dynamo_table(cls.table_name, cls.hash_key, cls.sorting_key)
 
-        match = tag_id_re.match(tag_soup.find("a", class_="label")["href"])
-        if match:
-            tag_id, = match.groups()
+    @classmethod
+    def from_steamspy_row(cls, row):
+        row[0] = int(row[0])
+        # count, votes, weight
+        row[2:5] = [int(s.replace(",", "")) for s in row[2:5]]
+        # price
+        row[5] = float(row[5].replace("$", ""))
+        # userscore
+        row[6] = float(row[6].replace("%", ""))
+        # owners
+        row[7] = int(row[7].replace(",", ""))
 
-        return cnstr(tag_id = tag_id,
-                     title = title,
-                     count = count)
+        return cls(tag_id=int(row[0]),
+                   name=row[1],
+                   count=row[2],
+                   votes=row[3],
+                   weight=row[4],
+                   price=row[5],
+                   userscore=row[6],
+                   owners=row[7])
 
-    def __init__(self, tag_id, title, count):
+    @classmethod
+    def from_json(cls, json):
+        return cls(**json)
+
+    @classmethod
+    def from_dynamo_json(cls, dynamo_json):
+        dynamo_json["price"] = float(dynamo_json["price"])
+        dynamo_json["userscore"] = float(dynamo_json["userscore"])
+        return cls.from_json(dynamo_json)
+
+    @classmethod
+    def batch_save(cls, tags):
+        with cls.table.batch_writer() as batch:
+            for t in tags:
+                print(t.to_dynamo_json())
+                batch.put_item(Item=t.to_dynamo_json())
+
+    def __init__(self, tag_id, name, count, votes, weight, price, userscore, owners):
         self.tag_id = tag_id
-        self.title = title
+        self.name = name
         self.count = count
+        self.votes = votes
+        self.weight = weight
+        self.price = price
+        self.userscore = userscore
+        self.owners = owners
+
+    def to_json(self):
+        return self.__dict__.copy()
+
+    def to_dynamo_json(self):
+        json = self.to_json()
+        # str here is ghetto af but it's the only way not to get rounding errors
+        json["price"] = Decimal(str(self.price))
+        json["userscore"] = Decimal(str(self.userscore))
+        return json
+
+    def save(self):
+        Tag.table.put_item(Item=self.to_dynamo_json())
 
 def get_tags():
-    url = "https://steamdb.info/tags/"
-    res = requests.get(url)
-    if not 200 <= res.status_code < 300:
-        msg = "Invalid status code (%d)"%res.status_code
-        raise Exception(msg)
-    soup = BeautifulSoup(res.text, "lxml")
-    tag_soups = soup.find_all("div", class_="span4")
-    return map(Tag.from_tag_soup, tag_soups)
+    # No automatic way to get the CSV file from steamspy, has to be updated manually
+    with open(os.path.join(data_dir, "steamspy.csv")) as f:
+        reader = csv.reader(f)
+        reader.next() # skip the header
+        tags = map(Tag.from_steamspy_row, reader)
+    return tags
 
-# if __name__ == '__main__':
-#     tags = get_tags()
-#     with open(os.path.join(data_dir, "tags.json"), "w") as f:
-#         json.dump(tags, f, default=lambda o: o.__dict__, indent=2)
-
+if __name__ == '__main__':
+    Tag.batch_save(get_tags())
