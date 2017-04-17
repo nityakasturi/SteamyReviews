@@ -107,7 +107,12 @@ class Review(object):
                    num_reviews=num_reviews)
 
     @classmethod
-    def fetch_new_reviews(cls, app_id, max_reviews=1000, review_filter="all", language="english"):
+    def fetch_new_reviews(cls,
+                          app_id,
+                          stop_id=None,
+                          max_reviews=1000,
+                          review_filter="all",
+                          language="english"):
         reviews = dict()
         params = {
             "day_range": "9223372036854776000",
@@ -129,6 +134,8 @@ class Review(object):
             review_box = soup.find_all('div', class_="review_box")
             added = 0
             for review_id, review in zip(json['recommendationids'], review_box):
+                if stop_id is not None and review_id == stop_id:
+                    return reviews.values()
                 if review_id not in reviews:
                     reviews[review_id] = cls.from_review_soup(app_id, review_id, review)
                     added += 1
@@ -162,12 +169,17 @@ class Review(object):
                 batch.put_item(Item=r.to_dynamo_json())
 
     @classmethod
-    def get(cls, key_condition, filter_expression):
-        kwargs = {"KeyConditionExpression": key_condition}
+    def get(cls, key_condition, filter_expression, max_items, ascending=False):
+        kwargs = {
+            "KeyConditionExpression": key_condition,
+            "ScanIndexForward": ascending # get reviews in descending chronological order
+        }
         if filter_expression is not None:
             kwargs["FilterExpression"] = filter_expression
+        if max_items is not None:
+            kwargs["Limit"] = filter_expression
 
-        response = Review.table.scan(**kwargs)
+        response = cls.table.scan(**kwargs)
         results = map(cls.from_dynamo_json, response["Items"])
         while "LastEvaluatedKey" in response:
             kwargs["ExclusiveStartKey"] = response['LastEvaluatedKey']
@@ -240,6 +252,3 @@ def saved_review_generator():
     for app_id in reviews:
         for i in xrange(len(reviews[app_id])):
             yield Review.from_json(reviews[app_id][i])
-
-if __name__ == '__main__':
-    Review.batch_save(saved_review_generator())

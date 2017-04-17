@@ -56,8 +56,16 @@ class Tag(object):
     def batch_save(cls, tags):
         with cls.table.batch_writer() as batch:
             for t in tags:
-                print(t.to_dynamo_json())
                 batch.put_item(Item=t.to_dynamo_json())
+
+    @classmethod
+    def get_all(cls):
+        response = cls.table.scan()
+        results = map(cls.from_dynamo_json, response["Items"])
+        while "LastEvaluatedKey" in response:
+            response = cls.table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            results += map(cls.from_dynamo_json, response["Items"])
+        return results
 
     def __init__(self, tag_id, name, count, votes, weight, price, userscore, owners):
         self.tag_id = tag_id
@@ -89,6 +97,3 @@ def get_tags():
         reader.next() # skip the header
         tags = map(Tag.from_steamspy_row, reader)
     return tags
-
-if __name__ == '__main__':
-    Tag.batch_save(get_tags())
