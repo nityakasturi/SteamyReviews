@@ -5,8 +5,8 @@ import os
 import requests
 import re
 
+from . import Review
 from app.dynamodb import dynamodb, utils
-from app.steam.models import Review
 from app.steam.util import data_file
 from bs4 import BeautifulSoup
 from boto3.dynamodb.conditions import Key, Attr
@@ -172,7 +172,9 @@ class Game(object):
         self.price = price
         self.tags = tags
         self.last_updated = last_updated
-        self.steam_url = "http://store.steampowered.com/app/%s"%app_id
+
+    def steam_url(self):
+        return "http://store.steampowered.com/app/%s"%self.app_id
 
     def to_json(self):
         game_json = self.__dict__.copy()

@@ -1,7 +1,10 @@
 from __future__ import print_function, division
 
-from app.steam.models import Game, Tag
+import logging
+
 from operator import itemgetter
+
+from app.steam.models import Game, Tag
 
 def jaccard_sim(tag_set1, tag_set2):
     return len(tag_set1 & tag_set2) / len(tag_set1 | tag_set2)
@@ -16,3 +19,7 @@ def do_jaccard(game_name):
             scores = [(jaccard_sim(tag_set, set(g.tags.keys())), g) for g in matching_games]
             scores.sort(reverse=True, key=itemgetter(0))
             return scores
+        else:
+            logging.error("game_ids was empty")
+    else:
+        logging.error("Game was None for " + game_name)
