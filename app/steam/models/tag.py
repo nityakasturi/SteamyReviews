@@ -6,7 +6,7 @@ import os
 import requests
 import re
 
-from . import Game
+from app.steam.models import Game
 from app.dynamodb import dynamodb, utils
 from app.steam.util import data_file
 from boto3.dynamodb.conditions import Key

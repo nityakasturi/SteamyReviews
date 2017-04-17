@@ -5,7 +5,7 @@ import os
 import requests
 import re
 
-from . import Review, Game, Tag
+from app.steam.models import Review, Game, Tag
 from app.steam.util import data_file
 from app.steam.models.game import iter_all_games
 from app.steam.models.review import saved_review_generator

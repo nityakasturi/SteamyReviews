@@ -5,8 +5,8 @@ import os
 import requests
 import re
 
-from . import Review
 from app.dynamodb import dynamodb, utils
+from app.steam.models import Review
 from app.steam.util import data_file
 from bs4 import BeautifulSoup
 from boto3.dynamodb.conditions import Key, Attr
@@ -31,7 +31,6 @@ digit_to_userscore = {score: r for r,score in userscore_to_digit.iteritems()}
 class GameNotFoundException(Exception):
     def __init__(self, app_id):
         super(GameNotFoundException, self).__init__("Game %s does not exist!"%app_id)
-
 
 class Game(object):
     table_name = "apps"

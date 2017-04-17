@@ -16,6 +16,3 @@ def do_jaccard(game_name):
             scores = [(jaccard_sim(tag_set, set(g.tags.keys())), g) for g in matching_games]
             scores.sort(reverse=True, key=itemgetter(0))
             return scores
-
-
-
