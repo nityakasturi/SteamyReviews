@@ -5,11 +5,12 @@ import os
 import requests
 import re
 
-from . import Review, Game, Tag
+from . import Review, Game, Tag, TagReverseIndex
 from app.steam.util import data_file
 from app.steam.models.game import iter_all_games
 from app.steam.models.review import saved_review_generator
 from app.steam.models.tag import get_tags
+from app.steam.models.tag_reverse_index import compute_reverse_index
 
 def prime_games_table():
     games = list(iter_all_games())
@@ -23,10 +24,14 @@ def prime_reviews_table():
 def prime_tags_table():
     Tag.batch_save(get_tags())
 
+def prime_tag_reverse_index():
+    TagReverseIndex.batch_save(compute_reverse_index())
+
 def prime_database():
     prime_games_table()
     prime_reviews_table()
     prime_tags_table()
+    prime_tag_reverse_index()
 
 if __name__ == '__main__':
     prime_database()

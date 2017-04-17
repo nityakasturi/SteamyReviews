@@ -33,6 +33,9 @@ Review.create_table()
 from app.steam.models import Tag
 Tag.create_table()
 
+from app.steam.models import TagReverseIndex
+TagReverseIndex.create_table()
+
 from app.steam.models import Game
 Game.create_table()
 

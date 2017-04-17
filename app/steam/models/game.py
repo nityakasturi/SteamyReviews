@@ -41,12 +41,16 @@ class Game(object):
 
     @classmethod
     def create_table(cls):
-        create_dynamo_table(Game.table_name, Game.hash_key, Game.sorting_key)
+        create_dynamo_table(cls.table_name, cls.hash_key, cls.sorting_key)
 
     @classmethod
-    def from_steampspy_json(cls, app_id, game):
+    def get_from_steampsy(cls, app_id):
+        game = requests.get("http://steamspy.com/api.php?request=appdetails&appid=%s"%app_id)
+        return cls.from_steampspy_json(game)
+
+    @classmethod
+    def from_steampspy_json(cls, game):
         # We don't use any of these guys so we have to delete them
-        game.pop("appid", None)
         game.pop("owners_variance", None)
         game.pop("players_forever", None)
         game.pop("players_forever_variance", None)
@@ -58,7 +62,7 @@ class Game(object):
         game.pop("median_2weeks", None)
         game.pop("ccu", None)
 
-        game["app_id"] = int(app_id)
+        game["app_id"] = int(game.pop("appid"))
         game["price"] = float(game["price"] or 0) / 100 # price is in cents
 
         if game["developer"] is None or len(game["developer"]) == 0:
@@ -66,11 +70,11 @@ class Game(object):
         if game["publisher"] is None or len(game["publisher"]) == 0:
             game["publisher"] = None
 
-        # flip the key/value so it matches better with the other data structures
-        if len(game["tags"]) > 0:
-            tags = {str(tag_id): name for name, tag_id in game["tags"].iteritems()}
+        # Just keep the tag_ids
+        if len(game["tags"]) > 0 and isinstance(game["tags"], dict):
+            tags = set(game["tags"].values())
         else:
-            tags = {}
+            tags = set()
         game["tags"] = tags
 
         # we have to set the actual userscore and num_reviews to -1 because this API doesn't return
@@ -112,7 +116,13 @@ class Game(object):
     def get(cls, app_id):
         res = cls.table.get_item(Key={cls.hash_key[0]: app_id})
         if "Item" in res:
-            return cls.from_dynamo_json(res["Item"])
+            # when a single get is done, it's worth updating the record before returning
+            game = cls.from_dynamo_json(res["Item"])
+            game.update_steamspy_attributes()
+            if game.userscore == -1:
+                game.update_userscore()
+            game.save()
+            return game
         else:
             raise GameNotFoundException(app_id)
 
@@ -174,6 +184,18 @@ class Game(object):
     def get_recent_reviews(self, max_reviews=100):
         return self.get_saved_reviews(None, None, max_reviews)
 
+    def update_steamspy_attributes(self):
+        new_game = Game.get_from_steampsy(self.app_id)
+        self.name = new_game.name
+        self.developer = new_game.developer
+        self.publisher = new_game.publisher
+        self.owners = new_game.owners
+        self.userscore = new_game.userscore
+        self.num_reviews = new_game.num_reviews
+        self.score_rank = new_game.score_rank
+        self.price = new_game.price
+        self.tags = new_game.tags
+
     def update_userscore(self):
         page = requests.get("http://store.steampowered.com/app/%s"%self.app_id)
         soup = BeautifulSoup(page.text)
@@ -187,18 +209,21 @@ class Game(object):
                     self.userscore = userscore_to_digit[score]
                     num_reviews, = matches.groups()
                     self.num_reviews = int(num_reviews.replace(",", ""))
-                    self.save()
                     print("Succesfully updated userscore for", self.app_id)
                     return
 
+        # This is just so that we don't retry any games that can't be scored (maybe because they
+        # haven't come out yet) automatically.
         print("Could not update userscore for", self.app_id)
+        self.userscore = -2
+        self.num_reviews = -2
 
 def iter_all_games():
     games_json = requests.get("http://steamspy.com/api.php?request=all").json()
     for app_id, game in games_json.iteritems():
         if app_id == "999999":
             continue
-        yield Game.from_steampspy_json(app_id, game)
+        yield Game.from_steampspy_json(game)
 
 if __name__ == '__main__':
     for u in Game.get_unscored(5):
