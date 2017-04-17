@@ -5,7 +5,7 @@ import requests
 import re
 
 from app.dynamodb import dynamodb
-from app.dynamodb.utils import create_dynamo_table, NUMBER
+from app.dynamodb.utils import create_dynamo_table, NUMBER, STRING
 from app.steam.util import data_file
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -23,7 +23,7 @@ class Review(object):
     table_name = "reviews"
     table = dynamodb.Table(table_name)
     hash_key = ("app_id", NUMBER)
-    sorting_key = ("review_ts", NUMBER)
+    sorting_key = ("review_date_review_id", STRING)
 
     @classmethod
     def create_table(cls):
