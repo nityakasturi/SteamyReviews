@@ -6,13 +6,13 @@ import requests
 import re
 
 from . import Review
-from app.dynamodb import dynamodb
-from app.dynamodb.utils import create_dynamo_table, STRING, NUMBER
+from app.dynamodb import dynamodb, utils
 from app.steam.util import data_file
 from bs4 import BeautifulSoup
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from decimal import Decimal
+from datetime import datetime
 
 reviews_re = re.compile(r"\(([0-9,]+) reviews?\)")
 userscore_to_digit = {
@@ -36,12 +36,12 @@ class GameNotFoundException(Exception):
 class Game(object):
     table_name = "apps"
     table = dynamodb.Table(table_name)
-    hash_key = ("app_id", NUMBER)
+    hash_key = ("app_id", utils.NUMBER)
     sorting_key = None
 
     @classmethod
     def create_table(cls):
-        create_dynamo_table(cls.table_name, cls.hash_key, cls.sorting_key)
+        utils.create_dynamo_table(cls)
 
     @classmethod
     def get_from_steampsy(cls, app_id):
@@ -70,61 +70,73 @@ class Game(object):
         if game["publisher"] is None or len(game["publisher"]) == 0:
             game["publisher"] = None
 
-        # Just keep the tag_ids
         if len(game["tags"]) > 0 and isinstance(game["tags"], dict):
-            tags = set(game["tags"].values())
+            tags = {k.lower().strip(): v for k, v in game["tags"].iteritems()}
         else:
-            tags = set()
+            tags = dict()
         game["tags"] = tags
 
         # we have to set the actual userscore and num_reviews to -1 because this API doesn't return
         # those values
-        game["userscore"] = -1
-        game["num_reviews"] = -1
+        game["userscore"] = None
+        game["num_reviews"] = None
+
+        if game["score_rank"] == "":
+            game["score_rank"] = None
+        else:
+            game["score_rank"] = game["score_rank"]
+
+        game["last_updated"] = datetime.now().date()
         return cls(**game)
 
     @classmethod
     def from_json(cls, game_json):
+        game_json["last_updated"] = datetime.strptime(game_json["last_updated"], "%Y-%m-%d").date()
         return cls(**game_json)
 
     @classmethod
     def from_dynamo_json(cls, dynamo_json):
         dynamo_json["price"] = float(dynamo_json["price"])
+        dynamo_json["tags"] = dynamo_json["tags"] or dict()
         return cls(**dynamo_json)
 
     @classmethod
     def batch_save(cls, games):
-        failed = list()
-        try:
-            print("---- BEGIN BATCH SAVE ----")
-            with cls.table.batch_writer() as batch:
-                for g in games:
-                    try:
-                        batch.put_item(Item=g.to_dynamo_json())
-                    except ClientError as e:
-                        failed.append(g)
-                        print("---- FAILED BATCH SAVE ----",
-                              g.to_dynamo_json(),
-                              e,
-                              sep="\n")
-        except ClientError as e:
-            print("There were some failures while ", e)
-            print("---- END BATCH SAVE ----")
-            return failed
+        return utils.batch_save(cls, games)
 
     @classmethod
-    def get(cls, app_id):
-        res = cls.table.get_item(Key={cls.hash_key[0]: app_id})
-        if "Item" in res:
-            # when a single get is done, it's worth updating the record before returning
-            game = cls.from_dynamo_json(res["Item"])
-            game.update_steamspy_attributes()
-            if game.userscore == -1:
-                game.update_userscore()
-            game.save()
-            return game
+    def find_by_name(cls, name):
+        name_filter = Attr("name").eq(name)
+        response = cls.table.scan(FilterExpression=name_filter)
+        if "Item" in response:
+            return cls.from_dynamo_json(response["Item"])
         else:
-            raise GameNotFoundException(app_id)
+            return None
+
+    @classmethod
+    def get(cls, app_ids):
+        if not (isinstance(app_ids) and len(app_ids) > 0):
+            raise Exception("`app_ids` must be a non-empty set!")
+        scanner = None
+        for app_id in app_ids:
+            if scanner is None:
+                scanner = Key(cls.hash_key[0]).eq(app_id)
+            else:
+                scanner = scanner | Key(cls.hash_key[0]).eq(app_id)
+        response = cls.table.scan(FilterExpression=scanner)
+        results = dict()
+        for item in response["Items"]:
+            game = Game.from_dynamo_json(item)
+            if game.userscore is None or (datetime.now().date() - game.last_updated).days >= 1:
+                game.update_and_save()
+            results[game.app_id] = game
+        while "LastEvaluatedKey" in response:
+            response = cls.table.scan(FilterExpression=scanner,
+                                      ExclusiveStartKey=response['LastEvaluatedKey'])
+            for item in response["Items"]:
+                game = Game.from_dynamo_json(item)
+                results[game.app_id] = game
+        return results
 
     @classmethod
     def get_all(cls):
@@ -149,7 +161,7 @@ class Game(object):
 
 
     def __init__(self, app_id, name, developer, publisher, owners, userscore, num_reviews,
-                 score_rank, price, tags):
+                 score_rank, price, tags, last_updated):
         self.app_id = app_id
         self.name = name
         self.developer = developer
@@ -160,9 +172,14 @@ class Game(object):
         self.score_rank = score_rank
         self.price = price
         self.tags = tags
+        self.last_updated = last_updated
+        self.steam_url = "http://store.steampowered.com/app/%s"%app_id
 
     def to_json(self):
-        return self.__dict__.copy()
+        game_json = self.__dict__.copy()
+        game_json["last_updated"] = self.last_updated.isoformat()
+        game_json["tags"] = self.tags if len(self.tags) > 0 else None
+        return game_json
 
     def to_dynamo_json(self):
         dynamo_json = self.to_json()
@@ -183,6 +200,12 @@ class Game(object):
 
     def get_recent_reviews(self, max_reviews=100):
         return self.get_saved_reviews(None, None, max_reviews)
+
+    def update_and_save(self):
+        game.update_steamspy_attributes()
+        game.update_userscore()
+        game.last_updated = datetime.now().date()
+        game.save()
 
     def update_steamspy_attributes(self):
         new_game = Game.get_from_steampsy(self.app_id)

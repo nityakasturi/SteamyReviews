@@ -4,8 +4,7 @@ import decimal
 import requests
 import re
 
-from app.dynamodb import dynamodb
-from app.dynamodb.utils import create_dynamo_table, NUMBER, STRING
+from app.dynamodb import dynamodb, utils
 from app.steam.util import data_file
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -22,12 +21,12 @@ reviews_re = re.compile("(-?[0-9,]+) reviews?")
 class Review(object):
     table_name = "reviews"
     table = dynamodb.Table(table_name)
-    hash_key = ("app_id", NUMBER)
-    sorting_key = ("review_date_review_id", STRING)
+    hash_key = ("app_id", utils.NUMBER)
+    sorting_key = ("review_date_review_id", utils.STRING)
 
     @classmethod
     def create_table(cls):
-        create_dynamo_table(cls.table_name, cls.hash_key, cls.sorting_key)
+        utils.create_dynamo_table(cls)
 
     @classmethod
     def from_review_soup(cls, app_id, review_id, review_soup):
@@ -164,9 +163,7 @@ class Review(object):
 
     @classmethod
     def batch_save(cls, reviews):
-        with cls.table.batch_writer() as batch:
-            for r in reviews:
-                batch.put_item(Item=r.to_dynamo_json())
+        return utils.batch_save(cls, reviews)
 
     @classmethod
     def get(cls, key_condition, filter_expression, max_items, ascending=False):
