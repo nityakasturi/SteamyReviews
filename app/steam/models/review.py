@@ -176,14 +176,7 @@ class Review(object):
         if max_items is not None:
             kwargs["Limit"] = filter_expression
 
-        response = cls.table.scan(**kwargs)
-        results = map(cls.from_dynamo_json, response["Items"])
-        while "LastEvaluatedKey" in response:
-            kwargs["ExclusiveStartKey"] = response['LastEvaluatedKey']
-            response = Review.table.scan(**kwargs)
-            results += map(cls.from_dynamo_json, response["Items"])
-        return results
-
+        return map(cls.from_dynamo_json, utils.table_scan(cls, **kwargs))
 
     def __init__(self, app_id, review_id, review_date, reviewer_id, reviewer, body, helpful, total,
                  funny, is_recommended, on_record, num_owned_games, num_reviews):

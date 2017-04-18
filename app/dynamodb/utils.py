@@ -4,6 +4,7 @@ from . import dynamodb
 from botocore.exceptions import ClientError
 from decimal import Decimal
 from datetime import datetime, date
+from progressbar import ProgressBar, UnknownLength
 
 NUMBER = "N"
 STRING = "S"
@@ -35,23 +36,40 @@ def create_dynamo_table(cls):
         )
 
 def batch_save(cls, items):
+    if not hasattr(items, "__iter__"):
+        raise ValueError("`items` must be iterable!")
+    max_value = len(items) if hasattr(items, "__len__") else UnknownLength
     failed = list()
     try:
         print("---- BEGIN `%s` BATCH SAVE ----"%cls.table_name)
         with cls.table.batch_writer() as batch:
-            for item in items:
-                try:
-                    batch.put_item(Item=item.to_dynamo_json())
-                except ClientError as e:
-                    failed.append(item)
-                    print("---- FAILED `%s` BATCH SAVE ----"%cls.table_name,
-                          item.to_dynamo_json(),
-                          e,
-                          sep="\n")
-    except ClientError as e:
-        print("There were some failures while ", e)
+            count = 0
+            with ProgressBar(max_value=max_value) as progress:
+                for item in items:
+                    try:
+                        batch.put_item(Item=item.to_dynamo_json())
+                    except ClientError as e:
+                        failed.append(item)
+                        print("---- FAILED `%s` BATCH SAVE ----"%cls.table_name,
+                              item.to_dynamo_json(),
+                              e,
+                              sep="\n")
+                    finally:
+                        progress.update(count)
+                        count += 1
+    except ClientError as err:
+        print("There were some failures while ", err)
         print("---- END FAILED `%s` BATCH SAVE ----"%cls.table_name)
         return failed
     else:
         print("---- END SUCCESFUL `%s` BATCH SAVE ----"%cls.table_name)
         return list()
+
+def table_scan(cls, **kwargs):
+    response = cls.table.scan(**kwargs)
+    for item in response["Items"]:
+        yield item
+    while "LastEvaluatedKey" in response:
+        response = cls.table.scan(ExclusiveStartKey=response['LastEvaluatedKey'], **kwargs)
+        for item in response["Items"]:
+            yield item

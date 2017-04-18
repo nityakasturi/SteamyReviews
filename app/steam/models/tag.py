@@ -68,12 +68,7 @@ class Tag(object):
 
     @classmethod
     def get_all(cls):
-        response = cls.table.scan()
-        results = map(cls.from_dynamo_json, response["Items"])
-        while "LastEvaluatedKey" in response:
-            response = cls.table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-            results += map(cls.from_dynamo_json, response["Items"])
-        return results
+        return map(cls.from_dynamo_json, utils.table_scan(cls))
 
     @classmethod
     def get_games_with_tags(cls, tag_names):
@@ -85,15 +80,9 @@ class Tag(object):
                 scanner = Key(cls.hash_key[0]).eq(tag)
             else:
                 scanner = scanner | Key(cls.hash_key[0]).eq(tag)
-        response = cls.table.scan(FilterExpression=scanner)
         results = dict()
-        for item in response["Items"]:
+        for tag in utils.table_scan(cls, FilterExpression=scanner):
             results[item["tag_name"]] = map(int, item["app_ids"])
-        while "LastEvaluatedKey" in response:
-            response = cls.table.scan(FilterExpression=scanner,
-                                      ExclusiveStartKey=response['LastEvaluatedKey'])
-            for item in response["Items"]:
-                results[item["tag_name"]] = map(int, item["app_ids"])
         return results
 
 

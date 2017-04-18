@@ -32,10 +32,10 @@ def refresh_database():
     # refresh_reviews_table()
 
 if __name__ == '__main__':
-    Game.table.delete()
-    Tag.table.delete()
-    Game.create_table()
-    Tag.create_table()
+    # Game.table.delete()
+    # Tag.table.delete()
+    # Game.create_table()
+    # Tag.create_table()
     games = list(iter_all_games())
     failed_games = Game.batch_save(games)
     with open(data_file("failed_games.json"), "w") as f:

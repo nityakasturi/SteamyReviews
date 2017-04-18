@@ -13,6 +13,7 @@ from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
 from decimal import Decimal
 from datetime import datetime
+from itertools import islice
 
 reviews_re = re.compile(r"\(([0-9,]+) reviews?\)")
 userscore_to_digit = {
@@ -122,42 +123,24 @@ class Game(object):
                 scanner = Key(cls.hash_key[0]).eq(app_id)
             else:
                 scanner = scanner | Key(cls.hash_key[0]).eq(app_id)
-        response = cls.table.scan(FilterExpression=scanner)
+
         results = dict()
-        for item in response["Items"]:
+        for item in utils.table_scan(cls, FilterExpression=scanner):
             game = Game.from_dynamo_json(item)
             if game.userscore is None or (datetime.now().date() - game.last_updated).days >= 1:
                 game.update_and_save()
             results[game.app_id] = game
-        while "LastEvaluatedKey" in response:
-            response = cls.table.scan(FilterExpression=scanner,
-                                      ExclusiveStartKey=response['LastEvaluatedKey'])
-            for item in response["Items"]:
-                game = Game.from_dynamo_json(item)
-                results[game.app_id] = game
         return results
 
     @classmethod
     def get_all(cls):
-        response = cls.table.scan()
-        results = map(cls.from_dynamo_json, response["Items"])
-        while "LastEvaluatedKey" in response:
-            response = cls.table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-            results += map(cls.from_dynamo_json, response["Items"])
-        return results
+        return map(cls.from_dynamo_json, utils.table_scan(cls))
 
     @classmethod
     def get_unscored(cls, limit=1000):
         attr_cond = Attr("userscore").eq(-1)
-        response = cls.table.scan(FilterExpression=attr_cond, Limit=limit)
-        results = map(cls.from_dynamo_json, response["Items"])
-        while "LastEvaluatedKey" in response and len(results) < limit:
-            response = cls.table.scan(FilterExpression=attr_cond,
-                                      Limit=5,
-                                      ExclusiveStartKey=response['LastEvaluatedKey'])
-            results += map(cls.from_dynamo_json, response["Items"])
-        return results
-
+        return map(cls.from_dynamo_json,
+                   islice(utils.table_scan(cls, FilterExpression=attr_cond, Limit=limit), limit))
 
     def __init__(self, app_id, name, developer, publisher, owners, userscore, num_reviews,
                  score_rank, price, tags, last_updated):
@@ -203,10 +186,10 @@ class Game(object):
         return self.get_saved_reviews(None, None, max_reviews)
 
     def update_and_save(self):
-        game.update_steamspy_attributes()
-        game.update_userscore()
-        game.last_updated = datetime.now().date()
-        game.save()
+        self.update_steamspy_attributes()
+        self.update_userscore()
+        self.last_updated = datetime.now().date()
+        self.save()
 
     def update_steamspy_attributes(self):
         new_game = Game.get_from_steampsy(self.app_id)
