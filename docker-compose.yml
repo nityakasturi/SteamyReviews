@@ -15,8 +15,6 @@ services:
     environment:
       - APP_SETTINGS=config.DevelopmentConfig
       - DATABASE_URL=postgres://test:test@postgres:5432/test
-      - DYNAMO_REGION=us-west-2
-      - DYNAMO_URL=http://dynamodb:8000
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
   postgres:

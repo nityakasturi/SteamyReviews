@@ -9,11 +9,12 @@ class Config(object):
     CSRF_SESSION_KEY = "secret"
     SECRET_KEY = "not_this"
     SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
-    DYNAMO_REGION = os.environ["DYNAMO_REGION"]
-    DYNAMO_DATABASE_URI = os.environ["DYNAMO_URL"]
+    DYNAMO_REGION = os.environ.get("DYNAMO_REGION", "us-west-2")
+    DYNAMO_DATABASE_URI = os.environ.get("DYNAMO_URL", "http://localhost:8000")
 
 class ProductionConfig(Config):
     DEBUG = False
+    DYNAMO_DATABASE_URI = os.environ.get("DYNAMO_URL", "https://dynamodb.us-west-2.amazonaws.com")
 
 class StagingConfig(Config):
     DEVELOPMENT = True
