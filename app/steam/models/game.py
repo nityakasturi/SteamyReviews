@@ -5,6 +5,7 @@ import logging
 import os
 import requests
 import re
+import sys
 
 from . import Review
 from app import app
@@ -13,7 +14,7 @@ from app.steam.util import data_file
 from bs4 import BeautifulSoup
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
-from cachetools import LRUCache
+from cachetools import LRUCache, Cache
 from decimal import Decimal
 from datetime import datetime
 from itertools import islice
@@ -42,7 +43,8 @@ def _get_no_cache(app_id):
     if len(res["Items"]) > 0:
         game = Game.from_dynamo_json(res["Items"][0])
     else:
-        raise GameNotFoundException(app_id)
+        # if we couldn't find it in Dynamo, try to get it from Steamspy
+        game = Game.get_from_steampsy(app_id)
     if (app.config["UPDATE_GAME_ON_GET"]
         and (game.userscore is None or (datetime.now().date() - game.last_updated).days >= 1)):
         game.update_and_save()
@@ -60,13 +62,20 @@ class Game(object):
         utils.create_dynamo_table(cls)
         # If in production, just pull everything down and fill the cache completely
         if app.config["GAME_CACHE_PULL_ON_LOAD"]:
-            cls.__game_cache = {int(game.app_id): game for game in cls.get_all()}
+            # We're still going to use the Cache class here instead of a dict because it's slightly
+            # better at handling missing values than a defaultdict
+            cls.__game_cache = Cache(sys.maxint, missing=_get_no_cache)
+            for game in cls.get_all():
+                cls.__game_cache[int(game.app_id)] = game
             logging.info("Loaded game cache")
 
     @classmethod
     def get_from_steampsy(cls, app_id):
-        game = requests.get("http://steamspy.com/api.php?request=appdetails&appid=%s"%app_id).json()
-        return cls.from_steampspy_json(game)
+        res = requests.get("http://steamspy.com/api.php?request=appdetails&appid=%s"%app_id)
+        if not 200 <= res.status_code < 300:
+            raise GameNotFoundException(app_id)
+        else:
+            return cls.from_steampspy_json(res.json())
 
     @classmethod
     def from_steampspy_json(cls, game):
