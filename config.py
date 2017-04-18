@@ -12,11 +12,14 @@ class Config(object):
     DYNAMO_REGION = os.environ.get("DYNAMO_REGION", "us-west-2")
     DYNAMO_DATABASE_URI = os.environ.get("DYNAMO_URL", "http://localhost:8000")
     GAME_CACHE_SIZE = os.environ.get("GAME_CACHE_SIZE", 1000)
-    UPDATE_GAME_ON_GET = int(os.environ.get("UPDATE_GAME_ON_GET", 0)) == 1
+    GAME_CACHE_PULL_ON_LOAD = int(os.environ.get("GAME_CACHE_PULL_ON_LOAD", 0)) == 1
+    UPDATE_GAME_ON_GET = int(os.environ.get("UPDATE_GAME_ON_GET", 1)) == 1
 
 class ProductionConfig(Config):
     DEBUG = False
     DYNAMO_DATABASE_URI = os.environ.get("DYNAMO_URL", "https://dynamodb.us-west-2.amazonaws.com")
+    DYNAMO_DATABASE_URI = os.environ.get("DYNAMO_URL", "https://dynamodb.us-west-2.amazonaws.com")
+    GAME_CACHE_PULL_ON_LOAD = int(os.environ.get("GAME_CACHE_PULL_ON_LOAD", 1)) == 1
 
 class StagingConfig(Config):
     DEVELOPMENT = True
