@@ -6,6 +6,7 @@ import os
 import requests
 import re
 import sys
+import time
 
 from . import Review
 from app import app
@@ -44,9 +45,9 @@ def _get_no_cache(app_id):
         game = Game.from_dynamo_json(res["Items"][0])
     else:
         # if we couldn't find it in Dynamo, try to get it from Steamspy
-        game = Game.get_from_steampsy(app_id)
+        game = Game.get_from_steamspy(app_id)
     if (app.config["UPDATE_GAME_ON_GET"]
-        and (game.userscore is None or (datetime.now().date() - game.last_updated).days >= 1)):
+        and (game.userscore is None or (datetime.utcnow() - game.last_updated).days >= 7)):
         game.update_and_save()
     return game
 
@@ -70,7 +71,7 @@ class Game(object):
             logging.info("Loaded game cache")
 
     @classmethod
-    def get_from_steampsy(cls, app_id):
+    def get_from_steamspy(cls, app_id):
         res = requests.get("http://steamspy.com/api.php?request=appdetails&appid=%s"%app_id)
         if not 200 <= res.status_code < 300:
             raise GameNotFoundException(app_id)
@@ -94,10 +95,8 @@ class Game(object):
         game["app_id"] = int(game.pop("appid"))
         game["price"] = float(game["price"] or 0) / 100 # price is in cents
 
-        if game["developer"] is None or len(game["developer"]) == 0:
-            game["developer"] = None
-        if game["publisher"] is None or len(game["publisher"]) == 0:
-            game["publisher"] = None
+        game["developer"] = game.get("developer", "") or ""
+        game["publisher"] = game.get("publisher", "") or ""
 
         if len(game["tags"]) > 0 and isinstance(game["tags"], dict):
             tags = {k.lower().strip(): v for k, v in game["tags"].iteritems()}
@@ -115,21 +114,26 @@ class Game(object):
         else:
             game["score_rank"] = game["score_rank"]
 
-        game["last_updated"] = datetime.now().date()
+        game["last_updated"] = datetime.utcnow()
         return cls(**game)
 
     @classmethod
     def from_json(cls, game_json):
-        game_json["last_updated"] = datetime.strptime(game_json["last_updated"], "%Y-%m-%d").date()
+        game_json["last_updated"] = datetime.utcfromtimestamp(int(game_json["last_updated"]))
         return cls(**game_json)
 
     @classmethod
     def from_dynamo_json(cls, dynamo_json):
+        dynamo_json["name"] = dynamo_json.get("name") or ""
+        dynamo_json["normalized_name"] = dynamo_json.get("normalized_name") or ""
+        dynamo_json["developer"] = dynamo_json.get("developer") or ""
+        dynamo_json["publisher"] = dynamo_json.get("publisher") or ""
         dynamo_json["price"] = float(dynamo_json["price"])
         if dynamo_json["tags"] is not None and len(dynamo_json["tags"]) > 0:
             dynamo_json["tags"] = {k: int(v) for k, v in dynamo_json["tags"].iteritems()}
         else:
             dynamo_json["tags"] = dict()
+        dynamo_json["last_updated"] = int(dynamo_json["last_updated"])
         return cls.from_json(dynamo_json)
 
     @classmethod
@@ -138,7 +142,7 @@ class Game(object):
 
     @classmethod
     def find_by_name(cls, name):
-        name_filter = Attr("name").eq(name)
+        name_filter = Attr("normalized_name").eq(normalize(name))
         return map(cls.from_dynamo_json, utils.table_scan(cls, FilterExpression=name_filter))
 
     @classmethod
@@ -166,9 +170,11 @@ class Game(object):
                    islice(utils.table_scan(cls, FilterExpression=attr_cond, Limit=limit), limit))
 
     def __init__(self, app_id, name, developer, publisher, owners, userscore, num_reviews,
-                 score_rank, price, tags, last_updated):
+                 score_rank, price, tags, last_updated,  **kwargs):
         self.app_id = app_id
         self.name = name
+        # this one is in the kwargs because it's optional but depends on self.name
+        self.normalized_name = kwargs.get("normalized_name") or normalize(self.name)
         self.developer = developer
         self.publisher = publisher
         self.owners = owners
@@ -179,6 +185,12 @@ class Game(object):
         self.tags = tags
         self.last_updated = last_updated
 
+    def __repr__(self):
+        return "Game(app_id=%d,name=%s)"%(self.app_id, self.normalized_name)
+
+    def __str__(self):
+        return self.__repr__()
+
     def steam_url(self):
         return "http://store.steampowered.com/app/%s"%self.app_id
 
@@ -186,6 +198,7 @@ class Game(object):
         return {
             "app_id": self.app_id,
             "name": self.name,
+            "normalized_name": self.normalized_name,
             "developer": self.developer,
             "publisher": self.publisher,
             "owners": self.owners,
@@ -194,12 +207,16 @@ class Game(object):
             "score_rank": self.score_rank,
             "price": self.price,
             "tags": self.tags if len(self.tags) > 0 else None,
-            "last_updated": self.last_updated.isoformat(),
+            "last_updated": int(time.mktime(self.last_updated.timetuple())),
         }
 
     def to_dynamo_json(self):
         dynamo_json = self.to_json()
         dynamo_json["price"] = Decimal(str(self.price))
+        dynamo_json["name"] = self.name or None
+        dynamo_json["normalized_name"] = self.normalized_name or None
+        dynamo_json["developer"] = self.developer or None
+        dynamo_json["publisher"] = self.publisher or None
         return dynamo_json
 
     def save(self):
@@ -220,11 +237,11 @@ class Game(object):
     def update_and_save(self):
         self.update_steamspy_attributes()
         self.update_userscore()
-        self.last_updated = datetime.now().date()
+        self.last_updated = datetime.utcnow()
         self.save()
 
     def update_steamspy_attributes(self):
-        new_game = Game.get_from_steampsy(self.app_id)
+        new_game = Game.get_from_steamspy(self.app_id)
         self.name = new_game.name
         self.developer = new_game.developer
         self.publisher = new_game.publisher
@@ -237,7 +254,7 @@ class Game(object):
 
     def update_userscore(self):
         page = requests.get("http://store.steampowered.com/app/%s"%self.app_id)
-        soup = BeautifulSoup(page.text)
+        soup = BeautifulSoup(page.text, "lxml")
 
         summary_section = soup.find_all("div", class_="summary_section")
         for sec in summary_section:
@@ -263,6 +280,9 @@ def iter_all_games():
         if app_id == "999999":
             continue
         yield Game.from_steampspy_json(game)
+
+def normalize(game_name):
+    return game_name.lower().encode('ascii', 'ignore').strip()
 
 if __name__ == '__main__':
     for u in Game.get_unscored(5):
