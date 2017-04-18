@@ -6,4 +6,4 @@ ADD https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.tar.
 WORKDIR /opt/dynamodb
 RUN tar xzf dynamodb.tar.gz
 
-CMD java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb
+CMD java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb -dbPath /var/dynamodb

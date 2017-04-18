@@ -21,27 +21,18 @@ def refresh_games_table():
 def refresh_tags_table(games):
     tag_reverse_index = compute_reverse_index(games)
     tags = create_tag_list(tag_reverse_index)
-    Tag.batch_save(tags)
+    failed = Tag.batch_save(tags)
+    with open(data_file("failed_tags.json"), "w") as f:
+        json.dump(map(lambda g: g.to_json(), failed), f, default=lambda o: o.__dict__, indent=2)
+    return tags
 
 def refresh_reviews_table():
     Review.batch_save(saved_review_generator())
 
 def refresh_database():
     games = refresh_games_table()
-    refresh_tags_table(games)
+    tags = refresh_tags_table(games)
     # refresh_reviews_table()
 
 if __name__ == '__main__':
-    # Game.table.delete()
-    # Tag.table.delete()
-    # Game.create_table()
-    # Tag.create_table()
-    games = list(iter_all_games())
-    failed_games = Game.batch_save(games)
-    with open(data_file("failed_games.json"), "w") as f:
-        json.dump(map(lambda g: g.to_json(), failed_games), f, default=lambda o: o.__dict__, indent=2)
-    tag_reverse_index = compute_reverse_index(games)
-    tags = create_tag_list(tag_reverse_index)
-    failed_tags = Tag.batch_save(tags)
-    with open(data_file("failed_tags.json"), "w") as f:
-        json.dump(map(lambda g: g.to_json(), failed_tags), f, default=lambda o: o.__dict__, indent=2)
+    refresh_database()

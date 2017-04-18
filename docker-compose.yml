@@ -1,4 +1,4 @@
-version: "2"
+version: "3"
 services:
   app:
     build:
@@ -10,22 +10,20 @@ services:
     volumes:
       - .:/root/SteamyReviews
     links:
-      - postgres
       - dynamodb
     environment:
       - APP_SETTINGS=config.DevelopmentConfig
       - DATABASE_URL=postgres://test:test@postgres:5432/test
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
-  postgres:
-    image: postgres:9.6.1
-    environment:
-      - POSTGRES_PASSWORD=test
-      - POSTGRES_USER=test
-      - POSTGRES_DB=test
+      - DYNAMO_URL=http://dynamodb:8000
+      - GAME_CACHE_PULL_ON_LOAD=1
+      - UPDATE_GAME_ON_GET=0
   dynamodb:
     build:
       context: .
       dockerfile: Dockerfile-dynamodb
     expose:
       - "8000"
+    volumes:
+      - /var/dynamodb

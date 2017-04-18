@@ -60,7 +60,8 @@ class Game(object):
         utils.create_dynamo_table(cls)
         # If in production, just pull everything down and fill the cache completely
         if app.config["GAME_CACHE_PULL_ON_LOAD"]:
-            cls.__game_cache = {game.app_id: game for game in cls.get_all()}
+            cls.__game_cache = {int(game.app_id): game for game in cls.get_all()}
+            logging.info("Loaded game cache")
 
     @classmethod
     def get_from_steampsy(cls, app_id):
