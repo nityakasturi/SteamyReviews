@@ -11,6 +11,8 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
     DYNAMO_REGION = os.environ.get("DYNAMO_REGION", "us-west-2")
     DYNAMO_DATABASE_URI = os.environ.get("DYNAMO_URL", "http://localhost:8000")
+    GAME_CACHE_SIZE = os.environ.get("GAME_CACHE_SIZE", 1000)
+    UPDATE_GAME_ON_GET = int(os.environ.get("UPDATE_GAME_ON_GET", 0)) == 1
 
 class ProductionConfig(Config):
     DEBUG = False

@@ -1,16 +1,19 @@
 from __future__ import print_function, division
 
 import json
+import logging
 import os
 import requests
 import re
 
 from . import Review
+from app import app
 from app.dynamodb import dynamodb, utils
 from app.steam.util import data_file
 from bs4 import BeautifulSoup
 from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
+from cachetools import LRUCache
 from decimal import Decimal
 from datetime import datetime
 from itertools import islice
@@ -33,11 +36,24 @@ class GameNotFoundException(Exception):
     def __init__(self, app_id):
         super(GameNotFoundException, self).__init__("Game %s does not exist!"%app_id)
 
+# This has to be out here because it can't be a classmethod but it also can't be __private
+def _get_no_cache(app_id):
+    res = Game.table.query(KeyConditionExpression=Key(Game.hash_key[0]).eq(app_id))
+    if len(res["Items"]) > 0:
+        game = Game.from_dynamo_json(res["Items"][0])
+    else:
+        raise GameNotFoundException(app_id)
+    if (app.config["UPDATE_GAME_ON_GET"]
+        and (game.userscore is None or (datetime.now().date() - game.last_updated).days >= 1)):
+        game.update_and_save()
+    return game
+
 class Game(object):
     table_name = "apps"
     table = dynamodb.Table(table_name)
     hash_key = ("app_id", utils.NUMBER)
     sorting_key = None
+    __game_cache = LRUCache(maxsize=app.config["GAME_CACHE_SIZE"], missing=_get_no_cache)
 
     @classmethod
     def create_table(cls):
@@ -45,7 +61,7 @@ class Game(object):
 
     @classmethod
     def get_from_steampsy(cls, app_id):
-        game = requests.get("http://steamspy.com/api.php?request=appdetails&appid=%s"%app_id)
+        game = requests.get("http://steamspy.com/api.php?request=appdetails&appid=%s"%app_id).json()
         return cls.from_steampspy_json(game)
 
     @classmethod
@@ -97,8 +113,11 @@ class Game(object):
     @classmethod
     def from_dynamo_json(cls, dynamo_json):
         dynamo_json["price"] = float(dynamo_json["price"])
-        dynamo_json["tags"] = dynamo_json["tags"] or dict()
-        return cls(**dynamo_json)
+        if dynamo_json["tags"] is not None and len(dynamo_json["tags"]) > 0:
+            dynamo_json["tags"] = {k: int(v) for k, v in dynamo_json["tags"].iteritems()}
+        else:
+            dynamo_json["tags"] = dict()
+        return cls.from_json(dynamo_json)
 
     @classmethod
     def batch_save(cls, games):
@@ -107,30 +126,21 @@ class Game(object):
     @classmethod
     def find_by_name(cls, name):
         name_filter = Attr("name").eq(name)
-        response = cls.table.scan(FilterExpression=name_filter)
-        if "Item" in response:
-            return cls.from_dynamo_json(response["Item"])
-        else:
-            return None
+        return map(cls.from_dynamo_json, utils.table_scan(cls, FilterExpression=name_filter))
 
     @classmethod
-    def get(cls, app_ids):
-        if not (isinstance(app_ids) and len(app_ids) > 0):
-            raise Exception("`app_ids` must be a non-empty set!")
-        scanner = None
-        for app_id in app_ids:
-            if scanner is None:
-                scanner = Key(cls.hash_key[0]).eq(app_id)
-            else:
-                scanner = scanner | Key(cls.hash_key[0]).eq(app_id)
-
-        results = dict()
-        for item in utils.table_scan(cls, FilterExpression=scanner):
-            game = Game.from_dynamo_json(item)
-            if game.userscore is None or (datetime.now().date() - game.last_updated).days >= 1:
-                game.update_and_save()
-            results[game.app_id] = game
-        return results
+    def get(cls, to_get):
+        if isinstance(to_get, int):
+            return cls.__game_cache[to_get]
+        elif not (isinstance(to_get, set) and len(to_get) > 0):
+            raise ValueError("`to_get` must be a non-empty set! (got %s)"%type(to_get))
+        else:
+            results = dict()
+            for app_id in to_get:
+                # this is a little funky, but it just standardizes how we get a single game, since
+                # we can't really to actual multi-gets from Dynamo
+                results[app_id] = cls.get(app_id)
+            return results
 
     @classmethod
     def get_all(cls):
@@ -138,7 +148,7 @@ class Game(object):
 
     @classmethod
     def get_unscored(cls, limit=1000):
-        attr_cond = Attr("userscore").eq(-1)
+        attr_cond = Attr("userscore").eq(None)
         return map(cls.from_dynamo_json,
                    islice(utils.table_scan(cls, FilterExpression=attr_cond, Limit=limit), limit))
 
@@ -160,10 +170,19 @@ class Game(object):
         return "http://store.steampowered.com/app/%s"%self.app_id
 
     def to_json(self):
-        game_json = self.__dict__.copy()
-        game_json["last_updated"] = self.last_updated.isoformat()
-        game_json["tags"] = self.tags if len(self.tags) > 0 else None
-        return game_json
+        return {
+            "app_id": self.app_id,
+            "name": self.name,
+            "developer": self.developer,
+            "publisher": self.publisher,
+            "owners": self.owners,
+            "userscore": self.userscore,
+            "num_reviews": self.num_reviews,
+            "score_rank": self.score_rank,
+            "price": self.price,
+            "tags": self.tags if len(self.tags) > 0 else None,
+            "last_updated": self.last_updated.isoformat(),
+        }
 
     def to_dynamo_json(self):
         dynamo_json = self.to_json()

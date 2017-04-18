@@ -12,17 +12,20 @@ from app.steam.util import data_file
 from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from collections import defaultdict
+from datetime import datetime
 from decimal import Decimal
 
-class TagMismatchException(Exception):
+class TagDoesNotExistException(Exception):
     def __init__(self, tag_name):
-        super(TagMismatchException, self).__init__("Tag \"%s\" does not exist!"%tag_name)
+        super(TagDoesNotExistException, self).__init__("Tag \"%s\" does not exist!"%tag_name)
 
 class Tag(object):
     table_name = "tags"
     table = dynamodb.Table(table_name)
     hash_key = ("tag_name", utils.STRING)
     sorting_key = ("weight", utils.NUMBER)
+    __tag_cache = None
+    __last_refresh = None
 
     @classmethod
     def create_table(cls):
@@ -32,7 +35,7 @@ class Tag(object):
     def from_steamspy_row(cls, row, tag_reverse_index):
         tag_name = row[1].lower().strip()
         if tag_name not in tag_reverse_index:
-            raise TagMismatchException(tag_name)
+            raise TagDoesNotExistException(tag_name)
         # count, votes, weight
         row[2:5] = [int(s.replace(",", "")) for s in row[2:5]]
         # price
@@ -60,6 +63,7 @@ class Tag(object):
     def from_dynamo_json(cls, dynamo_json):
         dynamo_json["price"] = float(dynamo_json["price"])
         dynamo_json["userscore"] = float(dynamo_json["userscore"])
+        dynamo_json["app_ids"] = map(int, dynamo_json["app_ids"])
         return cls.from_json(dynamo_json)
 
     @classmethod
@@ -71,20 +75,32 @@ class Tag(object):
         return map(cls.from_dynamo_json, utils.table_scan(cls))
 
     @classmethod
+    def __refresh_cache(cls):
+        if (cls.__tag_cache is None
+            or cls.__last_refresh is None
+            # refresh the cache if it's more than an hour old
+            or (cls.__last_refresh - datetime.now()).total_seconds() > 3600):
+            tags = cls.get_all()
+            cls.__tag_cache = {tag.tag_name: tag for tag in tags}
+            cls.__last_refresh = datetime.now()
+
+    @classmethod
+    def get(cls, tag_name):
+        cls.__refresh_cache()
+        if tag_name in cls.__tag_cache:
+            return cls.__tag_cache[tag_name]
+        else:
+            raise TagDoesNotExistException(tag_name)
+
+    @classmethod
     def get_games_with_tags(cls, tag_names):
+        cls.__refresh_cache()
         if not (isinstance(tag_names, set) and len(tag_names) > 0):
             raise Exception("`tag_names` must be a non-empty set!")
-        scanner = None
-        for tag in tag_names:
-            if scanner is None:
-                scanner = Key(cls.hash_key[0]).eq(tag)
-            else:
-                scanner = scanner | Key(cls.hash_key[0]).eq(tag)
         results = dict()
-        for tag in utils.table_scan(cls, FilterExpression=scanner):
-            results[item["tag_name"]] = map(int, item["app_ids"])
+        for tag_name in tag_names:
+            results[tag_name] = cls.get(tag_name).app_ids
         return results
-
 
     def __init__(self, tag_name, count, votes, weight, price, userscore, owners, app_ids):
         self.tag_name = tag_name
@@ -97,16 +113,22 @@ class Tag(object):
         self.app_ids = app_ids
 
     def to_json(self):
-        tag_json = self.__dict__.copy()
-        tag_json["app_ids"] = list(tag_json["app_ids"])
-        return tag_json
+        return {
+            "tag_name": self.tag_name,
+            "count": self.count,
+            "votes": self.votes,
+            "weight": self.weight,
+            "price": self.price,
+            "userscore": self.userscore,
+            "owners": self.owners,
+            "app_ids": list(self.app_ids),
+        }
 
     def to_dynamo_json(self):
-        json = self.to_json()
-        # str here is ghetto af but it's the only way not to get rounding errors
-        json["price"] = Decimal(str(self.price))
-        json["userscore"] = Decimal(str(self.userscore))
-        return json
+        dynamo_json = self.to_json()
+        dynamo_json["price"] = Decimal(str(self.price))
+        dynamo_json["userscore"] = Decimal(str(self.userscore))
+        return dynamo_json
 
     def save(self):
         Tag.table.put_item(Item=self.to_dynamo_json())

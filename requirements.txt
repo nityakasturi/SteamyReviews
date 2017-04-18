@@ -5,6 +5,7 @@ autoenv==1.0.0
 bcrypt==2.0.0
 beautifulsoup4==4.4.0
 boto3==1.4.4
+cachetools==2.0.0
 cffi==1.6.0
 click==6.7
 Flask-Bcrypt==0.7.1

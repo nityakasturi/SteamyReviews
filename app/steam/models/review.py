@@ -196,18 +196,31 @@ class Review(object):
         self.num_reviews = num_reviews
 
     def to_json(self):
-        json = self.__dict__.copy()
-        json["review_date"] = self.review_date.isoformat()
-        return json
+        return {
+            "app_id": self.app_id,
+            "review_id": self.review_id,
+            "review_date": self.review_date.isoformat(),
+            "review_date_review_id": self.review_date_review_id,
+            "reviewer_id": self.reviewer_id,
+            "reviewer": self.reviewer,
+            "body": self.body,
+            "helpful": self.helpful,
+            "total": self.total,
+            "funny": self.funny,
+            "is_recommended": self.is_recommended,
+            "on_record": self.on_record,
+            "num_owned_games": self.num_owned_games,
+            "num_reviews": self.num_reviews,
+        }
 
     def to_dynamo_json(self):
-        json = self.to_json()
+        dynamo_json = self.to_json()
         # str here is ghetto af but it's the only way not to get rounding errors
-        json["on_record"] = decimal.Decimal(str(self.on_record))
-        for k in json:
-            if json[k] == "":
-                json[k] = None
-        return json
+        dynamo_json["on_record"] = decimal.Decimal(str(self.on_record))
+        for k in dynamo_json:
+            if dynamo_json[k] == "":
+                dynamo_json[k] = None
+        return dynamo_json
 
     def save(self):
         Review.table.put_item(Item=self.to_dynamo_json())
