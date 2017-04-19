@@ -69,7 +69,8 @@ class Game(object):
             # We"re still going to use the Cache class here instead of a dict because it"s slightly
             # better at handling missing values than a defaultdict
             cls._game_cache = Cache(sys.maxint, missing=_get_no_cache)
-            for game in cls.get_all():
+            # games = list()
+            for game in iter_all_games():
                 cls._game_cache[int(game.app_id)] = game
                 cls._name_inverted_index[game.normalized_name] = int(game.app_id)
             logging.info("Loaded game cache")
@@ -149,13 +150,17 @@ class Game(object):
 
     @classmethod
     def find_by_name(cls, name):
+        name = normalize(name)
         name_filter = Attr("normalized_name").eq(normalize(name))
-        return map(cls.from_dynamo_json, utils.table_scan(cls, FilterExpression=name_filter))
+        for game in cls._game_cache.values():
+            if game.normalized_name == name:
+                return [game]
+        # return map(cls.from_dynamo_json, utils.table_scan(cls, FilterExpression=name_filter))
 
     @classmethod
     def correct_game_name(cls, game_name):
         game_name = normalize(game_name)
-        best_match = min(cls._name_inverted_index, key=partial(distance, game_name))
+        best_match = min(cls._name_inverted_index.keys(), key=partial(distance, game_name))
         return cls.get(cls._name_inverted_index[best_match])
 
     @classmethod
@@ -217,7 +222,7 @@ class Game(object):
         return "http://store.steampowered.com/app/%s"%self.app_id
 
     def steam_image_url(self):
-        return "http://cdn.akamai.steamstatic.com/steam/apps/%s/header.jpg%s"%self.app_id
+        return "http://cdn.akamai.steamstatic.com/steam/apps/%s/header.jpg"%self.app_id
 
     def to_json(self):
         return {

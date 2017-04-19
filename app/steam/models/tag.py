@@ -7,6 +7,7 @@ import requests
 import re
 
 from . import Game
+from app.steam.models.game import iter_all_games
 from app.dynamodb import dynamodb, utils
 from app.steam.util import data_file
 from boto3.dynamodb.conditions import Key
@@ -80,7 +81,10 @@ class Tag(object):
             or cls.__last_refresh is None
             # refresh the cache if it's more than an hour old
             or (cls.__last_refresh - datetime.now()).total_seconds() > 3600):
-            tags = cls.get_all()
+            # games = list(iter_all_games())
+            tag_reverse_index = compute_reverse_index(iter_all_games())
+            tags = create_tag_list(tag_reverse_index)
+            # tags = cls.get_all()
             cls.__tag_cache = {tag.tag_name: tag for tag in tags}
             cls.__last_refresh = datetime.now()
 
