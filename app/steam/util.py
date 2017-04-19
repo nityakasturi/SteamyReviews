@@ -1,4 +1,5 @@
 from os import path
+from app import dynamodb
 
 data_dir = path.realpath(path.join(path.realpath(__file__), "..", "..", "..", "data"))
 

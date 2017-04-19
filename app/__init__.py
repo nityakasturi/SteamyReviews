@@ -21,14 +21,20 @@ dynamodb = boto3.resource("dynamodb",
                           region_name=app.config["DYNAMO_REGION"],
                           endpoint_url=app.config["DYNAMO_DATABASE_URI"])
 
+from app.steam.models import Review
+Review.create_table()
+
+from app.steam.models import Tag
+Tag.create_table()
+
+from app.steam.models import Game
+Game.create_table()
+
 # Import + Register Blueprints
 from app.accounts import accounts as accounts
 app.register_blueprint(accounts)
 from app.irsystem import irsystem as irsystem
 app.register_blueprint(irsystem)
-
-from app.steam.models import review
-review.Review.create_table()
 
 # Initialize app w/SocketIO
 socketio.init_app(app)

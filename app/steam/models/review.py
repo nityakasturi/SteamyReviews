@@ -4,7 +4,7 @@ import decimal
 import requests
 import re
 
-from . import dynamodb
+from app.dynamodb import dynamodb, utils
 from app.steam.util import data_file
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -17,47 +17,16 @@ on_record_re = re.compile("(-?[0-9,]+\.?\d*) hrs? on record")
 products_re = re.compile("(-?[0-9,]+) products? in account")
 reviews_re = re.compile("(-?[0-9,]+) reviews?")
 
+
 class Review(object):
     table_name = "reviews"
     table = dynamodb.Table(table_name)
-    hash_key = "app_id"
-    sorting_key = "review_date_review_id"
+    hash_key = ("app_id", utils.NUMBER)
+    sorting_key = ("review_date_review_id", utils.STRING)
 
     @classmethod
     def create_table(cls):
-        review_tables = [table for table in dynamodb.tables.all()
-                               if table.name == Review.table_name]
-        if len(review_tables) != 0:
-            print("Table", Review.table_name, "already exists. Cannot create, skipping.")
-        else:
-            dynamodb.create_table(
-                TableName=Review.table_name,
-                KeySchema=[
-                    {
-                        'AttributeName': Review.hash_key,
-                        'KeyType': 'HASH'
-                    },
-                    {
-                        'AttributeName': Review.sorting_key,
-                        'KeyType': 'RANGE'
-                    }
-                ],
-                AttributeDefinitions=[
-                    {
-                        'AttributeName': Review.hash_key,
-                        'AttributeType': 'N'
-                    },
-                    {
-                        'AttributeName': Review.sorting_key,
-                        'AttributeType': 'S'
-                    },
-
-                ],
-                ProvisionedThroughput={
-                    'ReadCapacityUnits': 5,
-                    'WriteCapacityUnits': 5
-                }
-            )
+        utils.create_dynamo_table(cls)
 
     @classmethod
     def from_review_soup(cls, app_id, review_id, review_soup):
@@ -73,8 +42,7 @@ class Review(object):
             """
             match = compiled_re.match(text)
             if match is None:
-                msg = "Could not match \"%s\" with \"%s\""%(compiled_re.pattern,
-                                                            text)
+                msg = "Could not match \"%s\" with \"%s\""%(compiled_re.pattern, text)
                 raise Exception(msg)
             return map(lambda g: dtype(g.replace(",", "")), match.groups())
 
@@ -138,6 +106,52 @@ class Review(object):
                    num_reviews=num_reviews)
 
     @classmethod
+    def fetch_new_reviews(cls,
+                          app_id,
+                          stop_id=None,
+                          max_reviews=1000,
+                          review_filter="all",
+                          language="english"):
+        reviews = dict()
+        params = {
+            "day_range": "9223372036854776000",
+            "filter": review_filter,
+            "language": language
+        }
+        offset = 0
+        while len(reviews) < max_reviews:
+            params["start_offset"] = offset
+            url = "http://store.steampowered.com/appreviews/%s"%app_id
+            print("Getting %s with %s"%(url, params))
+            res = requests.get(url, params=params)
+
+            json = res.json()
+            if json.get('success') != 1 or not 200 <= res.status_code < 300:
+                break
+
+            soup = BeautifulSoup(json['html'], "lxml")
+            review_box = soup.find_all('div', class_="review_box")
+            added = 0
+            for review_id, review in zip(json['recommendationids'], review_box):
+                if stop_id is not None and review_id == stop_id:
+                    return reviews.values()
+                if review_id not in reviews:
+                    reviews[review_id] = cls.from_review_soup(app_id, review_id, review)
+                    added += 1
+
+            if added == 0:
+                break
+
+            # The way offset increases needs to be verified
+            if offset == 0:
+                offset = 5
+            elif offset == 5:
+                offset = 25
+            else:
+                offset += 25
+        return reviews.values()
+
+    @classmethod
     def from_json(cls, json):
         json["review_date"] = datetime.strptime(json["review_date"], "%Y-%m-%d").date()
         return cls(**json)
@@ -145,7 +159,24 @@ class Review(object):
     @classmethod
     def from_dynamo_json(cls, dynamo_json):
         dynamo_json["on_record"] = float(dynamo_json["on_record"])
-        return Review.from_json(dynamo_json)
+        return cls.from_json(dynamo_json)
+
+    @classmethod
+    def batch_save(cls, reviews):
+        return utils.batch_save(cls, reviews)
+
+    @classmethod
+    def get(cls, key_condition, filter_expression, max_items, ascending=False):
+        kwargs = {
+            "KeyConditionExpression": key_condition,
+            "ScanIndexForward": ascending # get reviews in descending chronological order
+        }
+        if filter_expression is not None:
+            kwargs["FilterExpression"] = filter_expression
+        if max_items is not None:
+            kwargs["Limit"] = filter_expression
+
+        return map(cls.from_dynamo_json, utils.table_scan(cls, **kwargs))
 
     def __init__(self, app_id, review_id, review_date, reviewer_id, reviewer, body, helpful, total,
                  funny, is_recommended, on_record, num_owned_games, num_reviews):
@@ -165,18 +196,31 @@ class Review(object):
         self.num_reviews = num_reviews
 
     def to_json(self):
-        json = self.__dict__.copy()
-        json["review_date"] = self.review_date.isoformat()
-        return json
+        return {
+            "app_id": self.app_id,
+            "review_id": self.review_id,
+            "review_date": self.review_date.isoformat(),
+            "review_date_review_id": self.review_date_review_id,
+            "reviewer_id": self.reviewer_id,
+            "reviewer": self.reviewer,
+            "body": self.body,
+            "helpful": self.helpful,
+            "total": self.total,
+            "funny": self.funny,
+            "is_recommended": self.is_recommended,
+            "on_record": self.on_record,
+            "num_owned_games": self.num_owned_games,
+            "num_reviews": self.num_reviews,
+        }
 
     def to_dynamo_json(self):
-        json = self.to_json()
-        # str here is ghetto af but it's the only way not to get rounding errors apaprently
-        json["on_record"] = decimal.Decimal(str(self.on_record))
-        for k in json:
-            if json[k] == "":
-                json[k] = None
-        return json
+        dynamo_json = self.to_json()
+        # str here is ghetto af but it's the only way not to get rounding errors
+        dynamo_json["on_record"] = decimal.Decimal(str(self.on_record))
+        for k in dynamo_json:
+            if dynamo_json[k] == "":
+                dynamo_json[k] = None
+        return dynamo_json
 
     def save(self):
         Review.table.put_item(Item=self.to_dynamo_json())
@@ -186,7 +230,7 @@ class Review(object):
         # excludes situations such as boy-friend/girl-friend - but inconsequential
         token_re = r'([a-z0-9]+((-|/)[a-z0-9]+)?)'
 
-        review_str = self.body.encode('ascii','ignore')
+        review_str = self.body.encode('ascii', 'ignore')
         tokens = word_tokenize(review_str)
         filtered_tokens = []
         for token in tokens:
@@ -203,58 +247,11 @@ class Review(object):
 
         return filtered_tokens
 
-def get_app_reviews(app_id, max_reviews=1000, filter="all", language="english"):
-    reviews = dict()
-    params = {
-        "day_range": "9223372036854776000",
-        "filter": filter,
-        "language": language
-    }
-    offset = 0
-    while len(reviews) < max_reviews:
-        params["start_offset"] = offset
-        url = "http://store.steampowered.com/appreviews/%s"%app_id
-        print("Getting %s with %s"%(url, params))
-        r = requests.get(url, params=params)
-
-        json = r.json()
-        if json.get('success') != 1 or not 200 <= r.status_code < 300:
-            break
-
-        soup = BeautifulSoup(json['html'], "lxml")
-        review_box = soup.find_all('div', class_="review_box")
-        added = 0
-        for review_id, review in zip(json['recommendationids'], review_box):
-            if review_id not in reviews:
-                reviews[review_id] = Review.from_review_soup(app_id,
-                                                             review_id,
-                                                             review)
-                added += 1
-
-        if added == 0:
-            break
-
-        # The way offset increases needs to be verified
-        if offset == 0:
-            offset = 5
-        elif offset == 5:
-            offset = 25
-        else:
-            offset += 25
-    return reviews.values()
-
-if __name__ == '__main__':
+def saved_review_generator():
     import json
     reviews_file = data_file("reviews.json")
     with open(reviews_file) as f:
         reviews = json.load(f)
-
     for app_id in reviews:
         for i in xrange(len(reviews[app_id])):
-            r = Review.from_json(reviews[app_id][i])
-            reviews[app_id][i] = r
-            try:
-                r.save()
-            except Exception as e:
-                print(r.to_dynamo_json())
-                raise e
+            yield Review.from_json(reviews[app_id][i])

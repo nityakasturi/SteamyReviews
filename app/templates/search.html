@@ -29,9 +29,9 @@
         <form class="form-inline global-search">
         {% if data %}
             <h1>{{output_message}}</h1>
-            {% for d in data %}
+            {% for game in data %}
                 <br>
-                <p>{{d}}</p>
+                <p><a href="{{game.steam_url()}}">{{game.name}}</a></p>
             {% endfor %}
         {% endif %}
         </form>
