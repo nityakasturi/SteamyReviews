@@ -24,6 +24,7 @@ def search():
             return render_template("search.html",
                                    didyoumean=game.name,
                                    query=query,
+                                   corrected_query=urllib.quote_plus(game.normalized_name),
                                    **DEFAULT_KWARGS)
         else:
             game = results[0]
