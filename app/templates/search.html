@@ -1,6 +1,7 @@
-<html>
+    <html>
     <head>
         <link rel="stylesheet" href="/static/bootstrap.min.css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,600" rel="stylesheet">
         <link rel="stylesheet" href="/static/main.css">
     </head>
     <body>
@@ -8,33 +9,45 @@
             <p>Project Name: {{ name }}</p>
             <p>Student Name: ({{ netid }})</p>
         </div>
-        <form class="form-inline global-search">
-            <h1 style="font-size: 55px; font-family:Futura; color: #4285F4">
-                <!-- C
-                <font color=#EA4335>S</font>
-                <font color=#FBBC05>4</font>
-                3
-                <font color=#34A853>0</font>
-                <font color=#EA4335>0</font> -->
-                Steamy Reviews
-            </h1>
+        <img class="steam-back" src="/static/steam.png">
+        <h1>STEAMY REVIEWS</h1>
+        <div class="overlay"></div>
+        <div class="container">
+            <form class="form-inline global-search">
+                <div class="form-group">
+                    <input class="searchbar" id="input" type="text" name="search" class="form-control" placeholder="Enter a game to get started" autofocus>
+                </div>
+                <button type="submit" class="btn btn-info">Submit</button>
+            </form>
+            {% if didyoumean is defined %}
+                 <h2 class="suggested">We couldn't find anything for <span class="emphasize">{{query}}</span>! Did you mean: <a href="/?search={{corrected_query}}"><span class="emphasize">{{didyoumean}}</span></a></h2>
+            {% endif %}
+        </div>
 
-            <br><br>
-
-            <div class="form-group">
-                <input id="input" type="text" name="search" class="form-control" placeholder="Your Input">
+        {% if results is defined %}
+            <!-- With love from https://github.com/BlackrockDigital/startbootstrap-creative -->
+            <div class="container-fluid">
+                <h2 class="result-head">Showing results for: <span class="emphasize">{{query}}</span></h2>
+                <div class="row no-gutter">
+                {% for game in results %}
+                    <div class="col-sm-4">
+                        <a href="{{game.steam_url()}}" class="result-box">
+                            <img src="{{ game.steam_img_url }} class="result-img">
+                            <div class="result-box-caption">
+                                <div class="result-box-caption-content">
+                                    <div class="result-text">
+                                        {{ game.name }}
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                {% endfor %}
+                </div>
             </div>
-            <button type="submit" class="btn btn-info"> Go! </button>
-        </form>
-        <form class="form-inline global-search">
-        {% if data %}
-            <h1>{{output_message}}</h1>
-            {% for game in data %}
-                <br>
-                <p><a href="{{game.steam_url()}}">{{game.name}}</a></p>
-            {% endfor %}
         {% endif %}
-        </form>
+
+        </div>
     </body>
 
 </html>
