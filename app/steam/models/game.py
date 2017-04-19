@@ -69,10 +69,10 @@ class Game(object):
             # We"re still going to use the Cache class here instead of a dict because it"s slightly
             # better at handling missing values than a defaultdict
             cls._game_cache = Cache(sys.maxint, missing=_get_no_cache)
-            # games = list()
             for game in iter_all_games():
-                cls._game_cache[int(game.app_id)] = game
-                cls._name_inverted_index[game.normalized_name] = int(game.app_id)
+                if len(game.tags) > 0:
+                    cls._game_cache[int(game.app_id)] = game
+                    cls._name_inverted_index[game.normalized_name] = int(game.app_id)
             logging.info("Loaded game cache")
         else:
             cls._name_inverted_index = cls.get_name_inverted_index()

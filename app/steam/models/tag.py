@@ -142,8 +142,9 @@ def compute_reverse_index(games=None):
         games = Game.get_all()
     tag_reverse_index = defaultdict(set)
     for game in games:
-        for tag_name in game.tags:
-            tag_reverse_index[tag_name.lower().strip()].add(int(game.app_id))
+        if len(game.tags) > 0:
+            for tag_name in game.tags:
+                tag_reverse_index[tag_name.lower().strip()].add(int(game.app_id))
     return tag_reverse_index
 
 def create_tag_list(tag_reverse_index):
