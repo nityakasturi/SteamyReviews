@@ -194,6 +194,9 @@ class Game(object):
     def steam_url(self):
         return "http://store.steampowered.com/app/%s"%self.app_id
 
+    def steam_image_url(self):
+        return "http://cdn.akamai.steamstatic.com/steam/apps/%s/header.jpg%s"%self.app_id
+
     def to_json(self):
         return {
             "app_id": self.app_id,
