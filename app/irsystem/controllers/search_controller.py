@@ -1,36 +1,34 @@
 from __future__ import print_function
 
-import logging
-
 import app
+import logging
+import urllib
 
-from . import *
+from . import irsystem, request, render_template
 from app.irsystem.models.search import do_jaccard
-from app.irsystem.models.matrix import Matrix
-from app.irsystem.models.redisconn import RedisConn as RedisConn
-from app.irsystem.models.helpers import *
-from app.irsystem.models.helpers import NumpyEncoder as NumpyEncoder
+from app.steam.models import Game
 
-PROJECT_NAME = "Steamy Reviews"
-NET_IDS = "bg379, hju3, nsk43, pmc85"
+DEFAULT_KWARGS = {
+    "name": "Steamy Reviews",
+    "netid": "bg379, hju3, nsk43, pmc85",
+}
 
-@irsystem.route('/', methods=['GET'])
+@irsystem.route("/", methods=["GET"])
 def search():
-    query = request.args.get('search')
+    query = request.args.get("search")
     if query is not None and len(query) > 0:
-        output_message = "Your search: " + query
-        results = do_jaccard(query)
-        if results is not None:
-            logging.error("Results for " + query.encode('ascii', 'ignore') + ": " + str(results))
-            data = results
+        results = Game.find_by_name(query)
+        if results is None:
+            game = Game.correct_game_name(query)
+            logging.info("No results for " + query.encode("ascii", "ignore"))
+            return render_template("search.html",
+                                   didyoumean=game.name,
+                                   query=query,
+                                   **DEFAULT_KWARGS)
         else:
-            data = []
-            logging.error("No results for " + query.encode('ascii', 'ignore'))
+            game = results[0]
+            ranking = do_jaccard(game)
+            logging.debug("Results for " + game.normalized_name + ": " + str(ranking))
+            return render_template("search.html", query=query, ranking=ranking, **DEFAULT_KWARGS)
     else:
-        data = []
-        output_message = ''
-    return render_template('search.html',
-                           name=PROJECT_NAME,
-                           netid=NET_IDS,
-                           output_message=output_message,
-                           data=data)
+        return render_template("search.html", **DEFAULT_KWARGS)
