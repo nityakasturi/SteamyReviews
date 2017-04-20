@@ -5,6 +5,7 @@ autoenv==1.0.0
 bcrypt==2.0.0
 beautifulsoup4==4.4.0
 boto3==1.4.4
+bpython==0.16
 cachetools==2.0.0
 cffi==1.6.0
 click==6.7
@@ -25,6 +26,7 @@ gunicorn==19.7.0
 hiredis==0.2.0
 itsdangerous==0.24
 Jinja2==2.8
+lxml==3.7.3
 Mako==1.0.4
 MarkupSafe==0.23
 marshmallow-sqlalchemy==0.8.1

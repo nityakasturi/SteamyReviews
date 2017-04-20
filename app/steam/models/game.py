@@ -242,11 +242,14 @@ class Game(object):
     def save(self):
         Game.table.put_item(Item=self.to_dynamo_json())
 
-    def fetch_more_reviews(self):
-        Review.batch_save(Review.fetch_new_reviews(self.app_id))
+    def fetch_more_reviews(self, limit=1000, save=False):
+        reviews = Review.fetch_new_reviews(self.app_id, limit=limit)
+        if save:
+            Review.batch_save(reviews)
+        return reviews
 
     def get_saved_reviews(self, key_condition, filter_expression, max_items):
-        primary_condition = Key(Review.hash_key).eq(self.app_id)
+        primary_condition = Key(Review.hash_key[0]).eq(self.app_id)
         if key_condition is not None:
             primary_condition = primary_condition & key_condition
         return Review.get(primary_condition, filter_expression, max_items)

@@ -9,6 +9,7 @@ from app.steam.util import data_file
 from bs4 import BeautifulSoup
 from datetime import datetime
 from nltk.tokenize import word_tokenize
+from progressbar import ProgressBar, UnknownLength
 
 people_re_part = "(?:person|people)"
 helpful_re = re.compile("(-?[0-9,]+) of ([0-9,]+) " + people_re_part)
@@ -109,7 +110,7 @@ class Review(object):
     def fetch_new_reviews(cls,
                           app_id,
                           stop_id=None,
-                          max_reviews=1000,
+                          limit=1000,
                           review_filter="all",
                           language="english"):
         reviews = dict()
@@ -119,10 +120,9 @@ class Review(object):
             "language": language
         }
         offset = 0
-        while len(reviews) < max_reviews:
+        while len(reviews) < limit:
             params["start_offset"] = offset
             url = "http://store.steampowered.com/appreviews/%s"%app_id
-            print("Getting %s with %s"%(url, params))
             res = requests.get(url, params=params)
 
             json = res.json()
@@ -132,12 +132,14 @@ class Review(object):
             soup = BeautifulSoup(json['html'], "lxml")
             review_box = soup.find_all('div', class_="review_box")
             added = 0
-            for review_id, review in zip(json['recommendationids'], review_box):
-                if stop_id is not None and review_id == stop_id:
-                    return reviews.values()
-                if review_id not in reviews:
-                    reviews[review_id] = cls.from_review_soup(app_id, review_id, review)
-                    added += 1
+            with ProgressBar(max_value=UnknownLength) as progress:
+                for review_id, review in zip(json['recommendationids'], review_box):
+                    if stop_id is not None and review_id == stop_id:
+                        return reviews.values()
+                    if review_id not in reviews:
+                        reviews[review_id] = cls.from_review_soup(app_id, review_id, review)
+                        added += 1
+                        progress.update(added)
 
             if added == 0:
                 break
@@ -150,6 +152,14 @@ class Review(object):
             else:
                 offset += 25
         return reviews.values()
+
+    @classmethod
+    def fetch_top_rate(cls, app_id, positive=True, limit=500):
+        if positive:
+            url = "http://steamcommunity.com/app/%d/positivereviews/?browsefilter=toprated"%app_id
+        else:
+            url = "http://steamcommunity.com/app/%d/negativereviews/?browsefilter=toprated"%app_id
+
 
     @classmethod
     def from_json(cls, json):
@@ -174,12 +184,12 @@ class Review(object):
         if filter_expression is not None:
             kwargs["FilterExpression"] = filter_expression
         if max_items is not None:
-            kwargs["Limit"] = filter_expression
+            kwargs["Limit"] = max_items
 
-        return map(cls.from_dynamo_json, utils.table_scan(cls, **kwargs))
+        return map(cls.from_dynamo_json, utils.query(cls, **kwargs))
 
     def __init__(self, app_id, review_id, review_date, reviewer_id, reviewer, body, helpful, total,
-                 funny, is_recommended, on_record, num_owned_games, num_reviews):
+                 funny, is_recommended, on_record, num_owned_games, num_reviews, **kwargs):
         self.app_id = app_id
         self.review_id = review_id
         self.review_date = review_date
