@@ -12,7 +12,7 @@ STRING = "S"
 def create_dynamo_table(cls):
     matching_tables = [table for table in dynamodb.tables.all() if table.name == cls.table_name]
     if len(matching_tables) != 0:
-        print("Table", cls.table_name, "already exists. Cannot create, skipping.")
+        print("Table `%s` already exists. Cannot create, skipping."%cls.table_name)
     else:
         key_schema = [{'AttributeName': cls.hash_key[0],
                        'KeyType': 'HASH'}]
@@ -67,6 +67,15 @@ def batch_save(cls, items):
 
 def table_scan(cls, **kwargs):
     response = cls.table.scan(**kwargs)
+    for item in response["Items"]:
+        yield item
+    while "LastEvaluatedKey" in response:
+        response = cls.table.scan(ExclusiveStartKey=response['LastEvaluatedKey'], **kwargs)
+        for item in response["Items"]:
+            yield item
+
+def query(cls, **kwargs):
+    response = cls.table.query(**kwargs)
     for item in response["Items"]:
         yield item
     while "LastEvaluatedKey" in response:
