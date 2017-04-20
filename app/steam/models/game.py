@@ -304,8 +304,15 @@ class Game(object):
         self.userscore = -2
         self.num_reviews = -2
 
+STEAMSPY_JSON = data_file("steamspy_games.json")
 def iter_all_games():
-    games_json = requests.get("http://steamspy.com/api.php?request=all").json()
+    if os.path.exists(STEAMSPY_JSON):
+        with open(STEAMSPY_JSON) as f:
+            games_json = json.load(f)
+    else:
+        games_json = requests.get("http://steamspy.com/api.php?request=all").json()
+        with open(STEAMSPY_JSON, "w") as f:
+            json.dump(games_json, f, default=lambda o: o.__dict__, indent=2)
     for app_id, game in games_json.iteritems():
         if app_id == "999999":
             continue
