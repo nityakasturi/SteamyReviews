@@ -19,7 +19,7 @@ from cachetools import LRUCache, Cache
 from decimal import Decimal
 from datetime import datetime
 from functools import partial
-from itertools import islice
+from itertools import islice, imap
 from Levenshtein import distance
 
 reviews_re = re.compile(r"\(([0-9,]+) reviews?\)")
@@ -40,43 +40,20 @@ class GameNotFoundException(Exception):
     def __init__(self, app_id):
         super(GameNotFoundException, self).__init__("Game %s does not exist!"%app_id)
 
-# This has to be out here because it can"t be a classmethod but it also can"t be __private
-def _get_no_cache(app_id):
-    res = Game.table.query(KeyConditionExpression=Key(Game.hash_key[0]).eq(app_id))
-    if len(res["Items"]) > 0:
-        game = Game.from_dynamo_json(res["Items"][0])
-    else:
-        # if we couldn"t find it in Dynamo, try to get it from Steamspy
-        game = Game.get_from_steamspy(app_id)
-    if (app.config["UPDATE_GAME_ON_GET"]
-        and (game.userscore is None or (datetime.utcnow() - game.last_updated).days >= 7)):
-        game.update_and_save()
-    return game
-
 class Game(object):
     table_name = "apps"
     table = dynamodb.Table(table_name)
     hash_key = ("app_id", utils.NUMBER)
     sorting_key = None
-    _game_cache = LRUCache(maxsize=app.config["GAME_CACHE_SIZE"], missing=_get_no_cache)
-    _name_inverted_index = {}
+    _game_cache = None
+    _name_inverted_index = None
 
     @classmethod
     def create_table(cls):
         utils.create_dynamo_table(cls)
-        # If in production, just pull everything down and fill the cache completely
-        if app.config["GAME_CACHE_PULL_ON_LOAD"]:
-            # We"re still going to use the Cache class here instead of a dict because it"s slightly
-            # better at handling missing values than a defaultdict
-            cls._game_cache = Cache(sys.maxint, missing=_get_no_cache)
-            for game in iter_all_games():
-                if len(game.tags) > 0:
-                    cls._game_cache[int(game.app_id)] = game
-                    cls._name_inverted_index[game.normalized_name] = int(game.app_id)
-            logging.info("Loaded game cache")
-        else:
-            cls._name_inverted_index = cls.get_name_inverted_index()
-            logging.info("Loaded name inverted index")
+        cls._game_cache = {game.app_id: game for game in iter_all_games()}
+        cls._name_inverted_index = {game.normalized_name: game.app_id
+                                    for game in cls._game_cache.itervalues()}
 
     @classmethod
     def get_from_steamspy(cls, app_id):
@@ -112,8 +89,8 @@ class Game(object):
             tags = dict()
         game["tags"] = tags
 
-        # we have to set the actual userscore and num_reviews to -1 because this API doesn"t return
-        # those values
+        # we have to set the actual userscore and num_reviews to None because this API doesn"t
+        # return those values
         game["userscore"] = None
         game["num_reviews"] = None
 
@@ -150,50 +127,63 @@ class Game(object):
 
     @classmethod
     def find_by_name(cls, name):
-        name = normalize(name)
-        name_filter = Attr("normalized_name").eq(normalize(name))
-        for game in cls._game_cache.values():
-            if game.normalized_name == name:
-                return [game]
-        # return map(cls.from_dynamo_json, utils.table_scan(cls, FilterExpression=name_filter))
+        game = cls._name_inverted_index.get(normalize(name))
+        if game is not None:
+            return cls.get(game)
 
     @classmethod
-    def correct_game_name(cls, game_name):
+    def correct_game_name(cls, game_name, max_results=2):
         game_name = normalize(game_name)
-        best_match = min(cls._name_inverted_index.keys(), key=partial(distance, game_name))
-        return cls.get(cls._name_inverted_index[best_match])
+        matches = sorted(cls._name_inverted_index.keys(), key=partial(distance, game_name))
+        return [cls.get(cls._name_inverted_index[match]) for match in matches[:max_results]]
 
     @classmethod
     def get(cls, to_get):
-        if isinstance(to_get, int):
-            return cls._game_cache[to_get]
-        elif not (isinstance(to_get, set) and len(to_get) > 0):
-            raise ValueError("`to_get` must be a non-empty set! (got %s)"%type(to_get))
-        else:
+        multi = isinstance(to_get, set) and len(to_get) > 0
+        if not (multi or isinstance(to_get, int)):
+            raise ValueError("`to_get` must be an int or a non-empty set! (got %s)"%type(to_get))
+        if multi:
             results = dict()
             for app_id in to_get:
                 # this is a little funky, but it just standardizes how we get a single game, since
                 # we can"t really to actual multi-gets from Dynamo
                 results[app_id] = cls.get(app_id)
             return results
+        else:
+            return cls._game_cache.get(to_get)
 
     @classmethod
     def get_all(cls):
-        return map(cls.from_dynamo_json, utils.table_scan(cls))
+        return cls._game_cache.itervalues()
 
     @classmethod
-    def get_unscored(cls, limit=1000):
+    def get_from_dynamo(cls, to_get):
+        multi = isinstance(to_get, set) and len(to_get) > 0
+        if not (multi or isinstance(to_get, int)):
+            raise ValueError("`to_get` must be an int or a non-empty set! (got %s)"%type(to_get))
+        if multi:
+            results = dict()
+            for app_id in to_get:
+                # this is a little funky, but it just standardizes how we get a single game, since
+                # we can"t really to actual multi-gets from Dynamo
+                results[app_id] = cls.get(app_id)
+            return results
+        else:
+            return cls.table.query(KeyConditionExpression=Key(cls.hash_key[0]).eq(to_get))
+
+    @classmethod
+    def get_all_from_dynamo(cls):
+        return imap(cls.from_dynamo_json, utils.table_scan(cls))
+
+    @classmethod
+    def get_unscored(cls):
+        return (game for game in cls._game_cache.itervalues() if game.userscore is not None)
+
+    @classmethod
+    def get_unscored_from_dynamo(cls, limit=1000):
         attr_cond = Attr("userscore").eq(None)
-        return map(cls.from_dynamo_json,
-                   islice(utils.table_scan(cls, FilterExpression=attr_cond, Limit=limit), limit))
-
-    @classmethod
-    def get_name_inverted_index(cls):
-        res = utils.table_scan(cls, ProjectionExpression="normalized_name, app_id")
-        index = dict()
-        for item in res:
-            index[item["normalized_name"].encode("ascii")] = int(item["app_id"])
-        return index
+        return imap(cls.from_dynamo_json,
+                    islice(utils.table_scan(cls, FilterExpression=attr_cond, Limit=limit), limit))
 
     def __init__(self, app_id, name, developer, publisher, owners, userscore, num_reviews,
                  score_rank, price, tags, last_updated,  **kwargs):
@@ -304,14 +294,14 @@ class Game(object):
         self.userscore = -2
         self.num_reviews = -2
 
-STEAMSPY_JSON = data_file("steamspy_games.json")
+STEAMSPY_GAMES_JSON = data_file("steamspy_games.json")
 def iter_all_games():
-    if os.path.exists(STEAMSPY_JSON):
-        with open(STEAMSPY_JSON) as f:
+    if os.path.exists(STEAMSPY_GAMES_JSON):
+        with open(STEAMSPY_GAMES_JSON) as f:
             games_json = json.load(f)
     else:
         games_json = requests.get("http://steamspy.com/api.php?request=all").json()
-        with open(STEAMSPY_JSON, "w") as f:
+        with open(STEAMSPY_GAMES_JSON, "w") as f:
             json.dump(games_json, f, default=lambda o: o.__dict__, indent=2)
     for app_id, game in games_json.iteritems():
         if app_id == "999999":
@@ -320,7 +310,3 @@ def iter_all_games():
 
 def normalize(game_name):
     return game_name.lower().encode("ascii", "ignore").strip()
-
-if __name__ == "__main__":
-    for u in Game.get_unscored(5):
-        u.update_userscore()
