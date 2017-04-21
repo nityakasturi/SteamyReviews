@@ -3,5 +3,5 @@ from app import dynamodb
 
 data_dir = path.realpath(path.join(path.realpath(__file__), "..", "..", "..", "data"))
 
-def data_file(filename):
-    return path.join(data_dir, filename)
+def data_file(*path_segments):
+    return path.join(data_dir, *path_segments)
