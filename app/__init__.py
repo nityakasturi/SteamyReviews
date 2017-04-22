@@ -15,11 +15,16 @@ app = Flask(__name__)
 app.config.from_object(os.environ["APP_SETTINGS"])
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
+import nltk
+# noop if dataset already downloaded!
+nltk.download("punkt")
+
 # DB
 db = SQLAlchemy(app)
 dynamodb = boto3.resource("dynamodb",
                           region_name=app.config["DYNAMO_REGION"],
                           endpoint_url=app.config["DYNAMO_DATABASE_URI"])
+s3 = boto3.resource("s3", region_name=app.config["DYNAMO_REGION"])
 
 from app.steam.models import Review
 Review.create_table()

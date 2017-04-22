@@ -5,11 +5,16 @@ import decimal
 import json
 import requests
 import re
+import zlib
 
+from app import s3
 from app.dynamodb import dynamodb, utils
 from app.steam.util import data_file
 from bs4 import BeautifulSoup as BS
+from botocore.exceptions import ClientError
+from cStringIO import StringIO
 from datetime import datetime
+from gzip import GzipFile
 from nltk.tokenize import word_tokenize
 from progressbar import ProgressBar
 from random import getrandbits
@@ -31,6 +36,8 @@ class Review(object):
     table = dynamodb.Table(table_name)
     hash_key = ("app_id", utils.NUMBER)
     sorting_key = ("review_date_review_id", utils.STRING)
+    bucket_name = "steamyreviews"
+    bucket = s3.Bucket(bucket_name)
 
     @classmethod
     def create_table(cls):
@@ -49,7 +56,7 @@ class Review(object):
         else:
             review["review_id"] = str(getrandbits(32))
 
-        content = review_soup.find("div", class_="apphub_CardTextContent")
+        content = review_soup.find("div", class_="apphub_CardTextContent") or EMPTY_DIV
         review["body"] = " ".join(c.strip() for c in content.children
                                   if not isinstance(c, bs4.element.Tag) and len(c.strip()) > 0)
 
@@ -77,22 +84,23 @@ class Review(object):
         return cls(**review)
 
     @classmethod
-    def from_json(cls, json):
-        json["review_date"] = datetime.strptime(json["review_date"], "%Y-%m-%d").date()
-        return cls(**json)
+    def from_json(cls, review_json):
+        review_json["review_date"] = datetime.strptime(review_json["review_date"],
+                                                       "%Y-%m-%d").date()
+        return cls(**review_json)
 
     @classmethod
-    def get_reviews_from_steam(cls, app_id):
+    def get_reviews_from_steam(cls, app_id, max_reviews=MAX_REVIEWS):
         reviews = list()
         review_generator = (review_soup
                             for soup in iterate_review_pages(app_id, language="english")
                             for review_soup in soup.find_all("div", class_="apphub_Card"))
-        with ProgressBar(max_value=MAX_REVIEWS) as progress:
+        with ProgressBar(max_value=max_reviews) as progress:
             for review_soup in review_generator:
                 review = cls.from_review_soup(app_id, review_soup)
                 if len(review.get_tokens()) >= 20:
                     reviews.append(review)
-                    if len(reviews) == MAX_REVIEWS:
+                    if len(reviews) == max_reviews:
                         break
                 progress.update(len(reviews))
         return reviews
@@ -118,6 +126,33 @@ class Review(object):
             kwargs["Limit"] = max_items
 
         return map(cls.from_dynamo_json, utils.query(cls, **kwargs))
+
+    @classmethod
+    def exists_in_s3(cls, app_id):
+        try:
+            s3.Object(cls.bucket_name, str(app_id)).load()
+            return True
+        except ClientError:
+            return False
+
+    @classmethod
+    def get_from_s3(cls, app_id):
+        obj = StringIO()
+        cls.bucket.download_fileobj(Key=str(app_id), Fileobj=obj)
+        obj.seek(0)
+        reviews = map(cls.from_json, json.loads(zlib.decompress(obj.getvalue())))
+        obj.close()
+        return reviews
+
+    @classmethod
+    def upload_to_s3(cls, app_id, reviews):
+        if not (isinstance(reviews, list) and all(isinstance(obj, Review) for obj in reviews)):
+            raise ValueError("`reviews` must be a list of Reviews!")
+        obj = StringIO()
+        print(zlib.compress(json.dumps([r.to_json() for r in reviews])), file=obj)
+        obj.seek(0)
+        cls.bucket.upload_fileobj(Key=str(app_id), Fileobj=obj)
+        obj.close()
 
     def __init__(self, app_id, review_id, review_date, body, helpful, total, is_recommended,
                  on_record, **kwargs):
