@@ -10,8 +10,7 @@ from . import Game
 from app.steam.models.game import iter_all_games
 from app.dynamodb import dynamodb, utils
 from app.steam.util import data_file
-from boto3.dynamodb.conditions import Key
-from botocore.exceptions import ClientError
+from bs4 import BeautifulSoup as BS
 from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
@@ -147,10 +146,20 @@ def compute_reverse_index(games=None):
                 tag_reverse_index[tag_name.lower().strip()].add(int(game.app_id))
     return tag_reverse_index
 
+STEAMSPY_TAG_CSV = data_file("steamspy_tags.csv")
 def create_tag_list(tag_reverse_index):
-    # No automatic way to get the CSV file from steamspy, has to be updated manually
-    with open(data_file("steamspy.csv")) as f:
+    if not os.path.exists(STEAMSPY_TAG_CSV):
+        page = requests.get("http://steamspy.com/tag/").text
+        soup = BS(page, "lxml")
+        table = soup.find("table", id="gamesbygenre")
+        table_head = table.find("thead")
+        table_body = table.find("tbody")
+        with open(STEAMSPY_TAG_CSV, "w") as f:
+            writer = csv.writer(f)
+            # write CSV header, just because
+            writer.writerow(list(table_head.stripped_strings))
+            writer.writerows(list(row.stripped_strings) for row in table_body.find_all("tr"))
+    with open(STEAMSPY_TAG_CSV) as f:
         reader = csv.reader(f)
         reader.next() # skip the header
-        tags = [Tag.from_steamspy_row(row, tag_reverse_index) for row in reader]
-    return tags
+        return [Tag.from_steamspy_row(row, tag_reverse_index) for row in reader]
