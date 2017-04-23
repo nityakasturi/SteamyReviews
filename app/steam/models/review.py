@@ -14,7 +14,6 @@ from bs4 import BeautifulSoup as BS
 from botocore.exceptions import ClientError
 from cStringIO import StringIO
 from datetime import datetime
-from gzip import GzipFile
 from nltk.tokenize import word_tokenize
 from progressbar import ProgressBar
 from random import getrandbits
