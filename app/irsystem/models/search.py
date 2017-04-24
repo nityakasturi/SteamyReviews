@@ -5,7 +5,7 @@ import logging
 from app.steam.models import Game, Tag
 from operator import itemgetter
 
-MAX_GAMES = 50
+MAX_GAMES = 27
 
 def jaccard_sim(tag_set1, tag_set2):
     return len(tag_set1 & tag_set2) / len(tag_set1 | tag_set2)
