@@ -63,4 +63,12 @@ $(document).ready(function () {
 			$(".details-content-wrapper").fadeIn(100);
 		});
 	});
+
+	$(".tag").click(function() {
+		var tag = $(this);
+		if(tag.hasClass("selected"))
+			$(this).removeClass("selected");
+		else
+			$(this).addClass("selected");
+	})
 });
