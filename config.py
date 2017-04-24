@@ -18,7 +18,6 @@ class Config(object):
 class ProductionConfig(Config):
     DEBUG = False
     DYNAMO_DATABASE_URI = os.environ.get("DYNAMO_URL", "https://dynamodb.us-west-2.amazonaws.com")
-    DYNAMO_DATABASE_URI = os.environ.get("DYNAMO_URL", "https://dynamodb.us-west-2.amazonaws.com")
     GAME_CACHE_PULL_ON_LOAD = int(os.environ.get("GAME_CACHE_PULL_ON_LOAD", 1)) == 1
 
 class StagingConfig(Config):

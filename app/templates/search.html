@@ -43,7 +43,7 @@
         {% if ranking is defined %}
             <!-- With love from https://github.com/BlackrockDigital/startbootstrap-creative -->
             <div class="container-fluid">
-                <h2 class="result-head">Showing results for: <a href="{{ game.steam_url() }}"><span class="emphasize">{{ game.name }}</span></a></h2>
+                <h2 style="z-index: 10;" class="result-head">Showing results for: <a href="{{ game.steam_url() }}"><span class="emphasize">{{ game.name }}</span></a></h2>
                 <div class="row no-gutter">
                 {% for game in ranking %}
                     <div class="col-sm-4">

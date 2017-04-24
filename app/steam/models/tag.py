@@ -28,7 +28,7 @@ class Tag(object):
     __last_refresh = None
 
     @classmethod
-    def create_table(cls):
+    def _create_table(cls):
         utils.create_dynamo_table(cls)
 
     @classmethod
