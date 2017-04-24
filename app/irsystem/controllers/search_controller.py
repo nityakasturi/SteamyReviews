@@ -5,13 +5,14 @@ import logging
 import urllib
 
 from . import irsystem, request, render_template
-from app.irsystem.models.search import do_jaccard
+from app.irsystem.models.search import do_jaccard, do_cosine_sim
 from app.steam.models import Game
 
 DEFAULT_KWARGS = {
     "name": "Steamy Reviews",
     "netid": "bg379, hju3, nsk43, pmc85",
 }
+MAX_RANK_RESULTS = 27
 
 @irsystem.route("/", methods=["GET"])
 def search():
@@ -40,6 +41,6 @@ def search():
         return render_template("search.html", **DEFAULT_KWARGS)
 
 def render_ranking_page(game):
-    ranking = do_jaccard(game)
+    ranking = do_cosine_sim(game, max_results=MAX_RANK_RESULTS)
     logging.error("Results for " + game.normalized_name + ": " + str(ranking))
     return render_template("search.html", game=game, ranking=ranking, **DEFAULT_KWARGS)

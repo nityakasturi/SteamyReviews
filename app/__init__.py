@@ -27,13 +27,14 @@ dynamodb = boto3.resource("dynamodb",
 s3 = boto3.resource("s3", region_name=app.config["DYNAMO_REGION"])
 
 from app.steam.models import Review
-Review.create_table()
+Review._create_table()
 
 from app.steam.models import Tag
-Tag.create_table()
+Tag._create_table()
 
 from app.steam.models import Game
-Game.create_table()
+Game._load_caches()
+Game._create_table()
 
 # Import + Register Blueprints
 from app.accounts import accounts as accounts

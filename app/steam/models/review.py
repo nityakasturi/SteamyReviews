@@ -39,7 +39,7 @@ class Review(object):
     bucket = s3.Bucket(bucket_name)
 
     @classmethod
-    def create_table(cls):
+    def _create_table(cls):
         utils.create_dynamo_table(cls)
 
     @classmethod

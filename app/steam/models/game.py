@@ -2,6 +2,7 @@ from __future__ import print_function, division
 
 import json
 import logging
+import numpy as np
 import os
 import requests
 import re
@@ -45,15 +46,34 @@ class Game(object):
     table = dynamodb.Table(table_name)
     hash_key = ("app_id", utils.NUMBER)
     sorting_key = None
-    _game_cache = None
-    _name_inverted_index = None
+    __app_ids = None
+    __app_id_to_index = None
+    __compressed_matrix = None
+    __ranking = None
+    __game_cache = None
+    __name_inverted_index = None
 
     @classmethod
-    def create_table(cls):
+    def _load_caches(cls):
+        cls.__app_ids, cls.__compressed_matrix = load_compressed_matrix()
+
+        # So we can pre-compute the ranking for every single game, since the compressed matrix is
+        # static per instance. Saves us a couple cycles
+        similarities = cls.__compressed_matrix.dot(cls.__compressed_matrix.T)
+        cls.__ranking = np.array([cls.__app_ids[np.argsort(row)[::-1]] for row in similarities])
+
+        cls.__app_id_to_index = {app_id: i for i, app_id in enumerate(cls.__app_ids)}
+
+        cls.__game_cache = {game.app_id: game
+                            for game in iter_all_games()
+                            if game.app_id in cls.__app_id_to_index}
+
+        cls.__name_inverted_index = {game.normalized_name: game.app_id
+                                     for game in cls.__game_cache.itervalues()}
+
+    @classmethod
+    def _create_table(cls):
         utils.create_dynamo_table(cls)
-        cls._game_cache = {game.app_id: game for game in iter_all_games()}
-        cls._name_inverted_index = {game.normalized_name: game.app_id
-                                    for game in cls._game_cache.itervalues()}
 
     @classmethod
     def get_from_steamspy(cls, app_id):
@@ -127,34 +147,32 @@ class Game(object):
 
     @classmethod
     def find_by_name(cls, name):
-        game = cls._name_inverted_index.get(normalize(name))
+        game = cls.__name_inverted_index.get(normalize(name))
         if game is not None:
             return cls.get(game)
 
     @classmethod
     def correct_game_name(cls, game_name, max_results=2):
         game_name = normalize(game_name)
-        matches = sorted(cls._name_inverted_index.keys(), key=partial(distance, game_name))
-        return [cls.get(cls._name_inverted_index[match]) for match in matches[:max_results]]
+        matches = sorted(cls.__name_inverted_index.keys(), key=partial(distance, game_name))
+        return [cls.get(cls.__name_inverted_index[match]) for match in matches[:max_results]]
 
     @classmethod
     def get(cls, to_get):
-        multi = isinstance(to_get, set) and len(to_get) > 0
-        if not (multi or isinstance(to_get, int)):
+        if isinstance(to_get, int):
+            return cls.__game_cache.get(to_get)
+        if not (isinstance(to_get, set) and len(to_get) > 0):
             raise ValueError("`to_get` must be an int or a non-empty set! (got %s)"%type(to_get))
-        if multi:
-            results = dict()
-            for app_id in to_get:
-                # this is a little funky, but it just standardizes how we get a single game, since
-                # we can"t really to actual multi-gets from Dynamo
-                results[app_id] = cls.get(app_id)
-            return results
-        else:
-            return cls._game_cache.get(to_get)
+        results = dict()
+        for app_id in to_get:
+            # this is a little funky, but it just standardizes how we get a single game, since
+            # we can"t really to actual multi-gets from Dynamo.
+            results[app_id] = cls.get(app_id)
+        return results
 
     @classmethod
     def get_all(cls):
-        return cls._game_cache.itervalues()
+        return cls.__game_cache.itervalues()
 
     @classmethod
     def get_from_dynamo(cls, to_get):
@@ -177,13 +195,27 @@ class Game(object):
 
     @classmethod
     def get_unscored(cls):
-        return (game for game in cls._game_cache.itervalues() if game.userscore is not None)
+        return (game for game in cls.__game_cache.itervalues() if game.userscore is not None)
 
     @classmethod
     def get_unscored_from_dynamo(cls, limit=1000):
         attr_cond = Attr("userscore").eq(None)
         return imap(cls.from_dynamo_json,
                     islice(utils.table_scan(cls, FilterExpression=attr_cond, Limit=limit), limit))
+
+    @classmethod
+    def get_ranking_for_game(cls, query):
+        if query.app_id not in cls.__app_id_to_index:
+            raise GameNotFoundException(query.app_id)
+        else:
+            return [cls.get(app_id)
+                    for app_id in cls.__ranking[cls.__app_id_to_index[query.app_id]]
+                    if app_id != query.app_id]
+
+    @classmethod
+    def compute_ranking_for_vector(cls, query_vector):
+        return [cls.get(cls.__app_ids[index])
+                for index in np.argsort(cls.__compressed_matrix.dot(query_vector))[::1]]
 
     def __init__(self, app_id, name, developer, publisher, owners, userscore, num_reviews,
                  score_rank, price, tags, last_updated,  **kwargs):
@@ -207,6 +239,12 @@ class Game(object):
 
     def __str__(self):
         return self.__repr__()
+
+    def vector(self):
+        if self.app_id not in Game.__app_id_to_index:
+            raise GameNotFoundException(self.app_id)
+        else:
+            return Game.__compressed_matrix[Game.__app_id_to_index[self.app_id]]
 
     def steam_url(self):
         return "http://store.steampowered.com/app/%s"%self.app_id
@@ -243,7 +281,7 @@ class Game(object):
         Game.table.put_item(Item=self.to_dynamo_json())
 
     def fetch_more_reviews(self, limit=1000, save=False):
-        reviews = Review.fetch_new_reviews(self.app_id, limit=limit)
+        reviews = Review.get_reviews_from_steam(self.app_id, max_reviews=limit)
         if save:
             Review.batch_save(reviews)
         return reviews
@@ -313,3 +351,14 @@ def iter_all_games():
 
 def normalize(game_name):
     return game_name.lower().encode("ascii", "ignore").strip()
+
+def save_compressed_matrix(app_ids,
+                           compressed_matrix,
+                           filename=data_file("compressed_matrix.npy")):
+    with open(filename, "wb") as f:
+        np.save(f, np.column_stack((app_ids, compressed_matrix)))
+
+def load_compressed_matrix(filename=data_file("compressed_matrix.npy")):
+    with open(filename, "rb") as f:
+        arr = np.load(f)
+    return arr[:, 0].astype(np.int), arr[:, 1:]

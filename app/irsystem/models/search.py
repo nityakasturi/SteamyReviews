@@ -5,12 +5,10 @@ import logging
 from app.steam.models import Game, Tag
 from operator import itemgetter
 
-MAX_GAMES = 27
-
 def jaccard_sim(tag_set1, tag_set2):
     return len(tag_set1 & tag_set2) / len(tag_set1 | tag_set2)
 
-def do_jaccard(query):
+def do_jaccard(query, max_results):
     tag_set = set(query.tags.keys())
     matching_app_ids = Tag.get_games_with_tags(tag_set)
     to_get = set()
@@ -23,4 +21,11 @@ def do_jaccard(query):
     # is equal, it will sort by the next and so on. Since the score_rank is second element,
     # games with equal Jaccard will then be sorted by score_rank.
     scores.sort(reverse=True)
-    return map(itemgetter(2), scores)[:MAX_GAMES]
+    scores = map(itemgetter(2), scores)
+    if max_results is None:
+        return scores
+    else:
+        return scores[:max_results]
+
+def do_cosine_sim(query, max_results):
+    return Game.get_ranking_for_game(query)[:max_results]
