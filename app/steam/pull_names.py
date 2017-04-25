@@ -9,7 +9,7 @@ def matrix_to_names():
     names = []
     for game in app_id_to_name:
         if int(game['app_id']) in app_ids:
-            names.append(game['name'].encode('ascii','ignore'))
+            names.append(game['name'])
     with open('data/app_names.json', 'w') as f:
         print json.dumps(names)
         json.dump(names, f)
