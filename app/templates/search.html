@@ -4,6 +4,19 @@
         <link rel="stylesheet" href="/static/bootstrap.min.css">
         <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,600" rel="stylesheet">
         <link rel="stylesheet" href="/static/main.css">
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+  <script>
+  $(document).ready(function() {
+    $.getJSON('https://raw.githubusercontent.com/PapaCharlie/SteamyReviews/auto-suggestion/data/app_names.json', function(data) {
+        $( "#input" ).autocomplete({
+          source: data
+        });
+    });
+  } );
+  </script>
     </head>
     <body>
         <div class="topcorner">
@@ -17,7 +30,7 @@
             <form class="form-inline global-search">
                 <div class="form-group">
                     {% macro searchbar(value) -%}
-                        <input class="searchbar" id="input" type="text" name="search" class="form-control" placeholder="Enter a game to get started" value="{{ value|e }}" autofocus>
+                        <input class="searchbar" id="input" autocomplete="off" type="text" name="search" class="form-control" placeholder="Enter a game to get started" value="{{ value|e }}" autofocus>
                     {%- endmacro %}
                     {% if game is defined %}
                         {{ searchbar(game.name) }}
