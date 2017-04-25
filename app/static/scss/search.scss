@@ -6,6 +6,8 @@ $hover-alt: rgb(96, 112, 126);
 $hover-stripes-opacity: 0.97;
 $hover-stripes-dark: rgba(96, 112, 126, $hover-stripes-opacity);
 $hover-stripes-light: rgba(98, 122, 129, $hover-stripes-opacity);
+$modal-background: rgb(96, 112, 126);
+$modal-shadow: rgba(30, 30, 30, 0.9);
 $overlay-background: #CCCCCC;
 $overlay-shadow: rgba(75, 75, 75, 0.5);
 $overlay-text: #444444;
@@ -35,10 +37,12 @@ $white: #FFFFFF;
 }
 a {
 	border-bottom: 3px solid transparent;
+	padding-bottom: 2px;
 	text-decoration: none;
 	transition: 0.15s ease-in-out;
 }
 a:hover {
+	color: $white;
 	border-color: $hover;
 	text-decoration: none !important;
 }
@@ -47,6 +51,16 @@ body {
 	color: $white;
 	font-family: 'Source Sans Pro', sans-serif;
 	font-weight: 300;
+}
+.close-button {
+	cursor: pointer;
+	font-size: 25px;
+	transition: 0.15s ease-in-out;
+}
+.close-button:hover {
+	-webkit-transform:rotate(90deg);
+    -moz-transform:rotate(90deg); 
+    -o-transform:rotate(90deg);
 }
 h1 {
 	position: absolute;
@@ -101,10 +115,10 @@ h1 {
 	top: 0px;
 	right: 0px;
 	width: 0px;
-	max-width: 400px;
 	height: 100%;
 	background: $overlay-background;
 	box-shadow: -4px 0px 15px $overlay-shadow;
+	overflow-y: scroll; 
 	z-index: 5;
 
 	.details-content-wrapper {
@@ -122,36 +136,27 @@ h1 {
 		}
 		.details-link {
 			position: relative;
-			display: block;
-			border-bottom: none;
+			top: 10px;
+			margin-bottom: 5px;
+			border-color: $overlay-text;
 			color: $overlay-text;
 			font-size: 16px;
 			font-weight: 600;
 			text-align: center;
 		}
 		.details-link:hover {
-			border-bottom: none;
 			color: $hover;
+			border-color: $hover;
 		}
 		.details-nav {
 			position: relative;
 			height: 25px;
-
-			.details-close {
-				cursor: pointer;
-				font-size: 25px;
-				transition: 0.15s ease-in-out;
-			}
-			.details-close:hover {
-				-webkit-transform:rotate(90deg);
-			    -moz-transform:rotate(90deg); 
-			    -o-transform:rotate(90deg);
-			}
 		}
 		.details-title {
 			position: relative;
 			margin: 8px 0px 2px 0px;
-			font-size: 30px;
+			white-space: normal;
+			font-size: 28px;
 			text-align: center;
 			text-transform: uppercase;
 		}
@@ -161,9 +166,37 @@ h1 {
 	color: $white;
 	font-weight: 600;
 }
+.form-input {
+	background: transparent;
+	border: none;
+	color: $white;
+	border-bottom: 3px solid $white;
+	font-size: 23px;
+}
+::-webkit-input-placeholder { /* WebKit, Blink, Edge */
+    color: $white;
+}
+:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+   color: $white;
+   opacity:  1;
+}
+::-moz-placeholder { /* Mozilla Firefox 19+ */
+   color: $white;
+   opacity:  1;
+}
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+   color: $white;
+}
+.form-input:focus {
+	outline-width: 0;
+	border-color: $hover;
+}
 .global-search {
 	position: relative;
 	top: 0px;
+}
+#login-modal {
+	background: $modal-shadow;
 }
 .overlay {
 	position: fixed;
@@ -180,32 +213,50 @@ h1 {
 		$background-stripes-dark 8px
 	);
 }
+.modal-dialog {
+	div {
+		background: $modal-background;
+		border: 0px;
+	}
+
+	p {
+		margin-bottom: 20px;
+	}
+
+	.close {
+		color: white;
+		opacity: 1;
+	}
+	.login-btn {
+		background: none;
+		color: $white;
+		border-color: $white;
+	}
+	.login-btn:hover {
+		background: $white;
+		color: $hover;
+	}
+	.login-input {
+		color: $white;
+		font-style: italic;
+		width: 100%;
+	}
+	.login-input:focus {
+		border-color: $white !important;
+	}
+	.modal-title {
+		font-size: 24px;
+		font-weight: 600;
+		text-transform: uppercase;
+	}
+}
 .no-gutter > [class*='col-'] {
 	padding-right: 0;
 	padding-left: 0;
 }
 .searchbar {
-	background: transparent;
-	border: none;
-	color: $white;
-	border-bottom: 3px solid white;
 	padding-top: 12px;
-	font-size: 23px;
 	width: 400px;
-}
-::-webkit-input-placeholder { /* WebKit, Blink, Edge */
-    color: $hover;
-}
-:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
-   color: $hover;
-   opacity:  1;
-}
-::-moz-placeholder { /* Mozilla Firefox 19+ */
-   color: $hover;
-   opacity:  1;
-}
-:-ms-input-placeholder { /* Internet Explorer 10-11 */
-   color: $hover;
 }
 .results {
 	margin-top: -15px;
@@ -215,6 +266,7 @@ h1 {
 	}
 	.result-box {
 		cursor: pointer;
+		overflow: hidden;
 
 		.result-box-caption {
 			opacity: 0;
@@ -264,9 +316,12 @@ h1 {
 		z-index: 2;
 	}
 	.tags {
-		text-align: center;
-		margin-top: 25px;
-		margin-bottom: 25px;
+		position: relative;
+		left: 50%;
+		transform: translateX(-50%);
+		margin: 25px;
+		width: 100%;
+		max-width: 800px;
 
 		h3 {
 			padding: 0;
@@ -287,6 +342,7 @@ h1 {
 			font-size: 16px;
 			font-weight: 600;
 			padding: 3px 10px 3px 10px;
+			display: inline-block;
 			margin-left: 5px;
 			margin-right: 5px;
 			text-transform: lowercase;
@@ -304,10 +360,6 @@ h1 {
 		}
 	}
 }
-.searchbar:focus {
-	outline-width: 0;
-	border-color: $hover;
-}
 .steam-back {
 	position: absolute;
 	bottom: 58%;
@@ -322,12 +374,12 @@ h1 {
 	position: absolute;
 	top: 15px;
 	right: 15px;
-	// position: relative;
-	// left: 50%;
-	// transform: translateX(-50%);
+}
+.steam-login:focus {
+	border-color: $hover;
 }
 .suggested {
-	color: $hover;
+	color: $white;
 	text-align: center;
 	font-size: 18px;
 }
