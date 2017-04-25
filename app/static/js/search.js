@@ -5,6 +5,7 @@ $(document).ready(function () {
 	var currentGameTagsValues = [];
 	var detailsExpanded = false;
 	var detailsRadarChart;
+	var selectedAppID;
 
 	if(currentGameTitle !== undefined) {
 		$('html, body').animate({scrollTop : $(".results").position().top - 15 }, 400);
@@ -37,6 +38,10 @@ $(document).ready(function () {
 		});
 	});
 
+	$(".details-query").click(function() {
+		window.location.replace("/?app_id=" + selectedAppID);
+	});
+
 	$(".result-box").click(function() {
 		var resultBox = $(this);
 		var updateDetails = function() {
@@ -44,6 +49,8 @@ $(document).ready(function () {
 			$(".details-title").text(gameTitle);
 			$(".details-img").attr("src", resultBox.children(".result-img").attr("src"));
 			$(".details-link").attr("href", resultBox.data("steam-url"));
+
+			selectedAppID = resultBox.data("app-id");
 
 			var tags = resultBox.data("tags");
 			var tagsKeys = [];

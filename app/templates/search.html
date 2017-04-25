@@ -56,7 +56,11 @@
                 <div class="row no-gutter">
                 {% for game in ranking %}
                     <div class="col-sm-4">
-                        <div class="result-box" data-tags="{{ game.tags_json() }}" data-title="{{ game.name }}" data-steam-url="{{ game.steam_url() }}">
+                        <div class="result-box"
+                             data-app-id="{{ game.app_id }}"
+                             data-tags="{{ game.tags_json() }}"
+                             data-title="{{ game.name }}"
+                             data-steam-url="{{ game.steam_url() }}">
                             <img src="{{ game.steam_image_url() }}" class="result-img">
                             <div class="result-box-caption">
                                 <div class="result-box-caption-content">
@@ -84,8 +88,8 @@
             <!-- <img class="details-img"> -->
             <h1 class="details-title unselectable"></h1>
             <p class="text-center">
-                <a class="details-link btn">View on Steam</a>
-                <a class="details-link btn">Use game as query</a>
+                <a class="details-btn btn details-link">View on Steam</a>
+                <a class="details-btn btn details-query">Use game as query</a>
             </p>
             <canvas class="details-attribute-chart"></canvas>
             </div>
