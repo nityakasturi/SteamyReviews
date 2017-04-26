@@ -15,12 +15,6 @@ def get_descriptions():
     descriptions = {}
     i = 0
 
-    if os.path.isfile('data/descriptions.pkl'):
-        pkl_file = open('data/descriptions.pkl', 'rb')
-        descriptions = pickle.load(pkl_file)
-        pkl_file.close()
-        app_ids = [376310, 377330]
-
     while i < len(app_ids):
         print app_ids[i]
         url = "http://store.steampowered.com/api/appdetails?appids=" + str(app_ids[i])
@@ -55,6 +49,19 @@ def get_descriptions():
             i = i + 1
             attempts = 0
         else:
+            cookies = {'birthtime':'28801'}
+            url = "http://store.steampowered.com/app/" + str(app_ids[i]) + "/"
+            r  = requests.get(url, cookies=cookies)
+            data = r.text
+            soup = BeautifulSoup(data)
+            text = soup.find('div', attrs={'id':'game_area_description'})
+            if r.url == url and text is not None:
+                descriptions[app_ids[i]] = text.get_text()[17:]
+                print text.get_text()[17:]
+                attempts = 0
+                i = i + 1
+            else:
+                print "ERROR - does not exist or age check not working"
             print json_data
             i = i + 1
             attempts = 0
