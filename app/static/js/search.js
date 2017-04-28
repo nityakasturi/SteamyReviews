@@ -1,8 +1,6 @@
 $(document).ready(function () {
 	// Page setup
 	var attributeChart = $(".details-attribute-chart");
-	var currentGameTagsKeys = [];
-	var currentGameTagsValues = [];
 	var currentGameVector;
 	var detailsExpanded = false;
 	var detailsRadarChart;
@@ -14,23 +12,7 @@ $(document).ready(function () {
 		$(".user-login").fadeIn(150);
 
 	if(currentGameTitle !== undefined) {
-		$('html, body').animate({scrollTop : $(".results").position().top - 15 }, 400);
-
-		for (var key in currentGameTags) {
-			if (!currentGameTags.hasOwnProperty(key)) continue;
-			currentGameTagsKeys.push(key);
-			currentGameTagsValues.push(currentGameTags[key]);
-		}
-
-		// var tags_div = $(".tags");
-		// var search_tags = tags_div.data("tags");
-		// for (var key in search_tags) {
-		// 	if (!search_tags.hasOwnProperty(key)) continue;
-		// 	tags_div.append("<p class='tag selected'>" + key + "</p>")
-		// }
-
-		vectorNames = vectorNamesStr.split(",");
-		currentGameVector = currentGameVectorStr.split(",").map(Number).map(Math.log);
+		$('html, body').animate({scrollTop : $(".global-search").offset().top - 15 }, 400);
 	}
 
 	// Handle event listeners
@@ -53,6 +35,8 @@ $(document).ready(function () {
 
 	$(".logout").click(function() {
 		document.cookie = 'username=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+		document.cookie = 'library_vector=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+		document.cookie = 'steam_ID=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 		location.reload();
 	});
 
@@ -75,17 +59,9 @@ $(document).ready(function () {
 
 			selectedAppID = resultBox.data("app-id");
 
-			var gameVector = resultBox.data("vector");
-			gameVector = gameVector.split(",").map(Number).map(Math.log);
-			// var tagsKeys = [];
-			// var tagsValues = [];
-			// for (var key in tags) {
-			// 	if (!tags.hasOwnProperty(key)) continue;
-			// 	tagsKeys.push(key);
-			// 	tagsValues.push(tags[key]);
-			// }
+			var gameVector = resultBox.data("features").map(Math.log);
 			var data = {
-			    labels: vectorNames,
+			    labels: currentGameFeatureNames,
 			    datasets: [
 			        {
 			            label: gameTitle,
@@ -105,7 +81,7 @@ $(document).ready(function () {
 			            pointBorderColor: "#fff",
 			            pointHoverBackgroundColor: "#fff",
 			            pointHoverBorderColor: "rgba(90, 179, 206, 1)",
-			            data: currentGameVector
+			            data: currentGameFeatures
 			        }
 			    ]
 			};
