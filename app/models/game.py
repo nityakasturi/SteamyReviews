@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 
 import csv
+import base64
 import json
 import logging
 import numpy as np
@@ -271,11 +272,16 @@ class Game(object):
     def steam_image_url(self):
         return "http://cdn.akamai.steamstatic.com/steam/apps/%s/header.jpg"%self.app_id
 
-    def tags_json(self, just_keys=False):
+    def tags_json(self, just_keys=False, encoded=False):
+        to_return = None
         if just_keys:
-            return json.dumps(sorted(self.tags.keys(), key=self.tags.get, reverse=True))
+            to_return = json.dumps(sorted(self.tags.keys(), key=self.tags.get, reverse=True))
         else:
-            return json.dumps(self.tags)
+            to_return = json.dumps(self.tags)
+        if encoded:
+            return base64.b64encode(to_return)
+        else:
+            return to_return
 
     def best_features(self, json_format=False):
         features = self.__vector[self.__best_features]

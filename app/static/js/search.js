@@ -56,11 +56,9 @@ $(document).ready(function() {
 
             var tagsDiv = $(".details-tags");
             tagsDiv.empty();
-            var searchTags = resultBox.data("tags");
-            for (var i = 0; i < searchTags.length; i++) {
-                tagsDiv.append("<p class='tag unselectable'>" + searchTags[i] + "</p>")
-            }
-
+            $.each(JSON.parse(atob(resultBox.data("tags"))), function(index, tag) {
+                tagsDiv.append("<p class='tag unselectable'>" + tag + "</p>");
+            });
             selectedAppID = resultBox.data("app-id");
 
             var gameVector = resultBox.data("features").map(Math.log);
