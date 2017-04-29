@@ -59,7 +59,7 @@ body {
 }
 .close-button:hover {
 	-webkit-transform:rotate(90deg);
-    -moz-transform:rotate(90deg); 
+    -moz-transform:rotate(90deg);
     -o-transform:rotate(90deg);
 }
 h1 {
@@ -118,7 +118,7 @@ h1 {
 	height: 100%;
 	background: $overlay-background;
 	box-shadow: -4px 0px 15px $overlay-shadow;
-	overflow-y: scroll; 
+	overflow-y: scroll;
 	z-index: 5;
 
 	.details-content-wrapper {

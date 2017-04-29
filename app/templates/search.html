@@ -30,7 +30,7 @@
             <form class="form-inline global-search">
                 <div class="form-group">
                     {% macro searchbar(value) -%}
-                        <input class="searchbar form-input" id="input" type="text" name="search" placeholder="Enter a game to get started" autofocus>
+                        <input class="searchbar form-input typeahead" id="game-searchbar" type="text" name="search" placeholder="Enter a game to get started" value="{{ value }}" autofocus>
                     {%- endmacro %}
                     <!-- Not using this the at the moment but might revert back later -->
                     {% if query_game is defined %}
@@ -38,7 +38,7 @@
                     {% elif query is defined %}
                         {{ searchbar(query) }}
                     {% else %}
-                        {{ searchbar("Enter a game to get started") }}
+                        {{ searchbar("") }}
                     {% endif %}
                 </div>
                 <button type="submit" class="btn btn-info">Submit</button>
@@ -72,8 +72,8 @@
                         <div class="result-box"
                              data-app-id="{{ ranked_game.app_id }}"
                              data-title="{{ ranked_game.name }}"
-                             data-tags=" {{ ranked_game.tags_json() }}"
-                             data-features="{{ ranked_game.intersect_features(query_game, True) }}"
+                             data-tags='{{ ranked_game.tags_json(True) | safe }}'
+                             data-features="{{ ranked_game.intersect_features(query_game, True) | safe }}"
                              data-steam-url="{{ ranked_game.steam_url() }}">
                             <img src="{{ ranked_game.steam_image_url() }}" class="result-img">
                             <div class="result-box-caption">
@@ -137,9 +137,13 @@
             </div>
         </div>
 
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
         <script src="/static/js/bootstrap.min.js"></script>
         <script src="/static/js/chart.min.js"></script>
+
+        <script src="/static/js/jquery.autocomplete.js"></script>
+        <script src="/dynamic/js/autocomplete.js"></script>
+
         <script>
             var userAccount = "{{ username }}";
             var currentGameTitle;

@@ -1,134 +1,136 @@
-$(document).ready(function () {
-	// Page setup
-	var attributeChart = $(".details-attribute-chart");
-	var currentGameVector;
-	var detailsExpanded = false;
-	var detailsRadarChart;
-	var selectedAppID;
+$(document).ready(function() {
+    // Page setup
+    var attributeChart = $(".details-attribute-chart");
+    var currentGameVector;
+    var detailsExpanded = false;
+    var detailsRadarChart;
+    var selectedAppID;
 
-	if(userAccount != "None")
-		$(".user-menu").fadeIn(150);
-	else
-		$(".user-login").fadeIn(150);
+    if (userAccount != "None")
+        $(".user-menu").fadeIn(150);
+    else
+        $(".user-login").fadeIn(150);
 
-	if(currentGameTitle !== undefined) {
-		$('html, body').animate({scrollTop : $(".global-search").offset().top - 15 }, 400);
-	}
+    if (currentGameTitle !== undefined) {
+        $('html, body').animate({
+            scrollTop: $(".global-search").offset().top - 15
+        }, 400);
+    }
 
-	// Handle event listeners
+    // Handle event listeners
 
-	// Thanks to: http://stackoverflow.com/questions/28631219/how-can-i-unfocus-the-modal-trigger-button-after-closing-the-modal-in-bootstrap
-	$("#login-modal").on("shown.bs.modal", function(e){
-    	$('.user-login').one('focus', function(e){$(this).blur();});
-	});
+    // Thanks to: http://stackoverflow.com/questions/28631219/how-can-i-unfocus-the-modal-trigger-button-after-closing-the-modal-in-bootstrap
+    $("#login-modal").on("shown.bs.modal", function(e) {
+        $('.user-login').one('focus', function(e) {
+            $(this).blur();
+        });
+    });
 
-	$(".details-close").click(function() {
-		$(".details-content-wrapper").fadeOut(150, function() {
-			$(".details-overlay").animate({width:'0px'}, 300);
-			detailsExpanded = false;
-		});
-	});
+    $(".details-close").click(function() {
+        $(".details-content-wrapper").fadeOut(150, function() {
+            $(".details-overlay").animate({
+                width: '0px'
+            }, 300);
+            detailsExpanded = false;
+        });
+    });
 
-	$(".details-query").click(function() {
-		window.location.replace("/?app_id=" + selectedAppID);
-	});
+    $(".details-query").click(function() {
+        window.location.replace("/?app_id=" + selectedAppID);
+    });
 
-	$(".logout").click(function() {
-		document.cookie = 'username=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-		document.cookie = 'library_vector=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-		document.cookie = 'steam_ID=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-		location.reload();
-	});
+    $(".logout").click(function() {
+        document.cookie = 'username=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        document.cookie = 'library_vector=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        document.cookie = 'steam_ID=;expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        location.reload();
+    });
 
-	$(".result-box").click(function() {
-		var resultBox = $(this);
-		var updateDetails = function() {
-			var gameTitle = resultBox.data("title");
-			$(".details-title").text(gameTitle);
-			$(".details-img").attr("src", resultBox.children(".result-img").attr("src"));
-			$(".details-link").attr("href", resultBox.data("steam-url"));
+    $(".result-box").click(function() {
+        var resultBox = $(this);
+        var updateDetails = function() {
+            var gameTitle = resultBox.data("title");
+            $(".details-title").text(gameTitle);
+            $(".details-img").attr("src", resultBox.children(".result-img").attr("src"));
+            $(".details-link").attr("href", resultBox.data("steam-url"));
 
-			var tagsDiv = $(".details-tags");
-			tagsDiv.empty();
-			var searchTags = JSON.parse(resultBox.data("tags"));
-			console.log(searchTags);
-			for (var key in searchTags) {
-				if (!searchTags.hasOwnProperty(key)) continue;
-				tagsDiv.append("<p class='tag unselectable'>" + key + "</p>")
-			}
+            var tagsDiv = $(".details-tags");
+            tagsDiv.empty();
+            var searchTags = resultBox.data("tags");
+            for (var i = 0; i < searchTags.length; i++) {
+                tagsDiv.append("<p class='tag unselectable'>" + searchTags[i] + "</p>")
+            }
 
-			selectedAppID = resultBox.data("app-id");
+            selectedAppID = resultBox.data("app-id");
 
-			var gameVector = resultBox.data("features").map(Math.log);
-			var data = {
-			    labels: currentGameFeatureNames,
-			    datasets: [
-			        {
-			            label: gameTitle,
-			            backgroundColor: "rgba(255,99,132,0.2)",
-			            borderColor: "rgba(255,99,132,1)",
-			            pointBackgroundColor: "rgba(255,99,132,1)",
-			            pointBorderColor: "#fff",
-			            pointHoverBackgroundColor: "#fff",
-			            pointHoverBorderColor: "rgba(255,99,132,1)",
-			            data: gameVector
-			        },
-			        {
-			            label: currentGameTitle,
-			            backgroundColor: "rgba(90, 179, 206, 0.2)",
-			            borderColor: "rgba(90, 179, 206, 1)",
-			            pointBackgroundColor: "rgba(90, 179, 206, 1)",
-			            pointBorderColor: "#fff",
-			            pointHoverBackgroundColor: "#fff",
-			            pointHoverBorderColor: "rgba(90, 179, 206, 1)",
-			            data: currentGameFeatures
-			        }
-			    ]
-			};
+            var gameVector = resultBox.data("features").map(Math.log);
+            var data = {
+                labels: currentGameFeatureNames,
+                datasets: [{
+                    label: gameTitle,
+                    backgroundColor: "rgba(255,99,132,0.2)",
+                    borderColor: "rgba(255,99,132,1)",
+                    pointBackgroundColor: "rgba(255,99,132,1)",
+                    pointBorderColor: "#fff",
+                    pointHoverBackgroundColor: "#fff",
+                    pointHoverBorderColor: "rgba(255,99,132,1)",
+                    data: gameVector
+                }, {
+                    label: currentGameTitle,
+                    backgroundColor: "rgba(90, 179, 206, 0.2)",
+                    borderColor: "rgba(90, 179, 206, 1)",
+                    pointBackgroundColor: "rgba(90, 179, 206, 1)",
+                    pointBorderColor: "#fff",
+                    pointHoverBackgroundColor: "#fff",
+                    pointHoverBorderColor: "rgba(90, 179, 206, 1)",
+                    data: currentGameFeatures
+                }]
+            };
 
-			if(detailsRadarChart !== undefined)
-				detailsRadarChart.destroy();
+            if (detailsRadarChart !== undefined)
+                detailsRadarChart.destroy();
 
-			detailsRadarChart = new Chart(attributeChart, {
-				type: 'radar',
-			    data: data,
-			    options: {
-			    	legend: {
-			    		position: 'bottom'
-			    	},
-			    	scale: {
-				        ticks: {
-				            display: false
-				        }
-				    },
-				    tooltips: {
-				    	enabled: false
-				    }
-			    }
-			});
+            detailsRadarChart = new Chart(attributeChart, {
+                type: 'radar',
+                data: data,
+                options: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    scale: {
+                        ticks: {
+                            display: false
+                        }
+                    },
+                    tooltips: {
+                        enabled: false
+                    }
+                }
+            });
 
-			$(".details-overlay").animate({width:'400px'}, 300, function() {
-				$(".details-content-wrapper").fadeIn(150);
-				detailsExpanded = true;
-			});
-		};
+            $(".details-overlay").animate({
+                width: '400px'
+            }, 300, function() {
+                $(".details-content-wrapper").fadeIn(150);
+                detailsExpanded = true;
+            });
+        };
 
-		if(detailsExpanded) {
-			var detailsBody = $(".details-body");
-			detailsBody.fadeOut(200, function() {
-				updateDetails();
-				detailsBody.fadeIn(200);
-			});
-		}
-		else
-			updateDetails();
-	});
+        if (detailsExpanded) {
+            var detailsBody = $(".details-body");
+            detailsBody.fadeOut(200, function() {
+                updateDetails();
+                detailsBody.fadeIn(200);
+            });
+        } else
+            updateDetails();
+    });
 
-	$(".tag").click(function() {
-		var tag = $(this);
-		if(tag.hasClass("selected"))
-			$(this).removeClass("selected");
-		else
-			$(this).addClass("selected");
-	})
+    $(".tag").click(function() {
+        var tag = $(this);
+        if (tag.hasClass("selected"))
+            $(this).removeClass("selected");
+        else
+            $(this).addClass("selected");
+    })
 });

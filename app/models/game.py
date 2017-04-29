@@ -247,6 +247,8 @@ class Game(object):
             return
         self.__vector = Game.__compressed_matrix[Game.__app_id_to_index[self.app_id]]
         self.__best_features = np.argsort(self.vector())[::-1][:app.config["MAX_SPIDER_FEATURES"]]
+        # This is just so that the spider chart doens't look so *regular*
+        self.__best_features.sort()
 
     def __repr__(self):
         return "Game(app_id=%d,name=%s)"%(self.app_id, self.normalized_name)
@@ -269,8 +271,11 @@ class Game(object):
     def steam_image_url(self):
         return "http://cdn.akamai.steamstatic.com/steam/apps/%s/header.jpg"%self.app_id
 
-    def tags_json(self):
-        return json.dumps(self.tags)
+    def tags_json(self, just_keys=False):
+        if just_keys:
+            return json.dumps(sorted(self.tags.keys(), key=self.tags.get, reverse=True))
+        else:
+            return json.dumps(self.tags)
 
     def best_features(self, json_format=False):
         features = self.__vector[self.__best_features]
