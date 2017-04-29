@@ -1,3 +1,6 @@
+$auto-stripes-opacity: 0.99;
+$auto-stripes-dark: hsla(208, 14%, 42%, $auto-stripes-opacity);
+$auto-stripes-light: hsla(208, 14%, 44%, $auto-stripes-opacity);
 $background: #444444;
 $background-stripes-dark: #000000;
 $background-stripes-light: #222222;
@@ -46,6 +49,39 @@ a:hover {
 	border-color: $hover;
 	text-decoration: none !important;
 }
+.autocomplete-suggestions {
+	background: repeating-linear-gradient(
+		135deg,
+		$auto-stripes-light,
+		$auto-stripes-light 4px,
+		$auto-stripes-dark 4px,
+		$auto-stripes-dark 8px
+	);
+	border-radius: 0px;
+	border: 3px solid $white;
+	box-shadow: none;
+	margin-top: -2px;
+	padding-top: 7px;
+	padding-bottom: 7px;
+	overflow: auto;
+}
+.autocomplete-suggestion {
+	cursor: pointer;
+	padding: 2px 5px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-transform: uppercase;
+	padding: 7px 12px 7px 12px;
+	transition: 0.1s ease-in-out;
+}
+.autocomplete-selected {
+	background: $white;
+	color: $hover;
+}
+.autocomplete-suggestions strong {
+	font-weight: 600;
+}
+
 body {
 	background: $background;
 	color: $white;

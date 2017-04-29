@@ -9,10 +9,10 @@
         <img class="steam-back" src="/static/steam.png">
         <h1>STEAMY REVIEWS</h1>
         <div class="overlay"></div>
-        <div class="topcorner">
+        <!-- <div class="topcorner">
             <p>Project name: {{ name }}</p>
             <p>Student NetIDs: {{ netid }}</p>
-        </div>
+        </div> -->
         <button class="btn btn-info steam-account user-login" data-toggle="modal" data-target="#login-modal">
             <span>Login to Steam</span>
             <span class="btn-desc">For personalized suggestions</span>
@@ -30,7 +30,7 @@
             <form class="form-inline global-search">
                 <div class="form-group">
                     {% macro searchbar(value) -%}
-                        <input class="searchbar form-input typeahead" id="game-searchbar" type="text" name="search" placeholder="Enter a game to get started" value="{{ value }}" autofocus>
+                        <input class="searchbar form-input typeahead" id="game-searchbar" type="text" name="search" placeholder="Enter a game to get started" value="" autofocus>
                     {%- endmacro %}
                     <!-- Not using this the at the moment but might revert back later -->
                     {% if query_game is defined %}
@@ -151,7 +151,7 @@
                 currentGameTitle = "{{ query_game.name }}";
                 var currentGameFeatureNames = {{ query_game.best_feature_names(True) | safe }};
                 var currentGameFeatures = {{ query_game.best_features(True) | safe }};
-                currentGameFeatures = currentGameFeatures.map(Math.log);
+                currentGameFeatures = currentGameFeatures.map(Math.login);
             {% endif %}
         </script>
         <script src="/static/js/search.js"></script>
