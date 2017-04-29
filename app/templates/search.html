@@ -103,7 +103,7 @@
             <!-- <img class="details-img"> -->
             <h1 class="details-title unselectable"></h1>
             <p class="text-center">
-                <a class="details-btn btn details-link">View on Steam</a>
+                <a target="_blank" class="details-btn btn details-link">View on Steam</a>
                 <a class="details-btn btn details-query">Use game as query</a>
             </p>
             <canvas class="details-attribute-chart"></canvas>
@@ -125,7 +125,8 @@
                     </div>
                     <form action="/steam/login" method="post">
                     <div class="modal-body">
-                        <p>Logging into Steam helps us personalize search results and suggest games based on your library.</p>
+                        <p>Logging into Steam helps us personalize search results and suggest games based on your library.
+                        <br>We don't store any of your personal data. This site is not associated with Valve Corp.</p>
                         <div class="form-group">
                             <input class="login-input form-input" name="username" type="text" placeholder="Steam ID">
                         </div>

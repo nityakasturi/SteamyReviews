@@ -24,6 +24,7 @@ $(document).ready(function() {
         $('.user-login').one('focus', function(e) {
             $(this).blur();
         });
+        $('.login-input').focus();
     });
 
     $(".details-close").click(function() {
