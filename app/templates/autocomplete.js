@@ -3,6 +3,10 @@ $('#game-searchbar').autocomplete({
     triggerSelectOnValidInput: false,
     minChars: 2,
     onSelect: function(suggestion) {
-        window.location = "/?app_id=" + suggestion.data
+    	var user_vector = "";
+    	if ($('#user-vector-toggle').prop('checked'))
+    		user_vector = "&user_vector=on";
+    	
+        window.location = "/?app_id=" + suggestion.data + user_vector;
     }
 });

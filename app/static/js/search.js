@@ -7,7 +7,7 @@ $(document).ready(function() {
     var selectedAppID;
 
     if (userAccount != "None") {
-        $(".user-menu").fadeIn(150);
+        $(".user-menu").fadeIn(150).css("display", "inline-block");
         $('#user-vector-toggle').bootstrapToggle({
             on: 'Yes',
             off: 'No'
@@ -15,7 +15,7 @@ $(document).ready(function() {
         $('#user-vector-toggle').bootstrapToggle(vector_toggle);
     }
     else
-        $(".user-login").fadeIn(150);
+        $(".user-login").fadeIn(150).css("display", "inline-block");
 
     if (currentGameTitle !== undefined) {
         $('html, body').animate({
@@ -26,6 +26,11 @@ $(document).ready(function() {
     if (toggle_modal !== undefined) {
         $("#login-modal").modal();
         $('.login-input').focus();
+    }
+
+    if (vector_toggle == "on") {
+        $('.no-vector-ranking').css("display", "none");
+        $('.vector-ranking').css("display", "block");
     }
 
     // Handle event listeners
@@ -142,5 +147,18 @@ $(document).ready(function() {
             $(this).removeClass("selected");
         else
             $(this).addClass("selected");
+    });
+
+    $('#user-vector-toggle').change(function() {
+        if($(this).prop('checked')) {
+            $('.no-vector-ranking').fadeOut(150, function() {
+                $('.vector-ranking').fadeIn(150);
+            });
+        }
+        else {
+            $('.vector-ranking').fadeOut(150, function() {
+                $('.no-vector-ranking').fadeIn(150);
+            });
+        }
     })
 });

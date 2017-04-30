@@ -61,12 +61,21 @@ def render_ranking_page(game):
     library_vector = None
     if ("library_vector" in request.cookies) and user_vector_toggle:
         library_vector = np.array(json.loads(request.cookies.get("library_vector")))
-    app.logger.error("Getting ranking")
-    ranking = do_cosine_sim(game, max_results=MAX_RANK_RESULTS, library_vector=library_vector)
-    app.logger.info("Results for " + game.normalized_name + ": " + str(ranking))
+
+    app.logger.info("Getting ranking")
+    base_ranking = do_cosine_sim(game, library_vector=None)
+    app.logger.debug("Results for " + game.normalized_name + ": " + str(base_ranking))
+
+    user_ranking = None
+    if username is not None:
+        app.logger.info("User is logged in. Also getting vector ranking.")
+        user_ranking = do_cosine_sim(game, library_vector=library_vector)
+        app.logger.debug("Results for " + game.normalized_name + ": " + str(user_ranking))
+
     return render_template("search.html",
                            query_game=game,
-                           ranking=ranking,
+                           ranking=base_ranking,
+                           user_ranking=user_ranking,
                            username=username,
                            user_vector_toggle=user_vector_toggle,
                            **DEFAULT_KWARGS)
@@ -93,5 +102,5 @@ def do_jaccard(query, max_results):
     else:
         return scores[:max_results]
 
-def do_cosine_sim(query, max_results, library_vector):
+def do_cosine_sim(query, library_vector, max_results=MAX_RANK_RESULTS):
     return query.get_ranking(library_vector)[:max_results]

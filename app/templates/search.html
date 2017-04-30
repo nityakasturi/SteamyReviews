@@ -18,7 +18,7 @@
         <div class="steam-menu">
             {% if username %}
                 <button class="btn btn-info generic-search-btn ">
-                    <span>General Suggestions</span>
+                    <span>Our Picks</span>
                     <span class="btn-desc">From your Steam library</span>
                 </button>
             {% endif %}
@@ -85,7 +85,7 @@
                     <h3 class="unselectable">Tags generated from game reviews</h3>
                     <p class="unselectable">Click to remove from results</p>
                 </div> -->
-                <div class="row no-gutter">
+                <div class="row no-gutter no-vector-ranking">
                 {% for score, ranked_game in ranking %}
                     <div class="col-sm-4">
                         <div class="result-box"
@@ -109,6 +109,34 @@
                         </div>
                     </div>
                 {% endfor %}
+                </div>
+
+                <div class="row no-gutter vector-ranking">
+                {% if user_ranking != None %}
+                    {% for score, ranked_game in user_ranking %}
+                        <div class="col-sm-4">
+                            <div class="result-box"
+                                 data-app-id="{{ ranked_game.app_id }}"
+                                 data-title="{{ ranked_game.name }}"
+                                 data-score="{{ score }}"
+                                 data-tags='{{ ranked_game.tags_json(True, True) | safe }}'
+                                 data-features="{{ ranked_game.intersect_features(query_game, True) | safe }}"
+                                 data-steam-url="{{ ranked_game.steam_url() }}">
+                                <img src="{{ ranked_game.steam_image_url() }}" class="result-img">
+                                <div class="result-box-caption">
+                                    <div class="result-box-caption-content">
+                                        <div class="result-text">
+                                            {{ ranked_game.name }}
+                                        </div>
+                                        <div class="result-expand">
+                                            Click for more info
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
                 </div>
             </div>
         {% endif %}
@@ -187,7 +215,8 @@
             {% endif %}
 
             {% if user_vector_toggle is defined %}
-                vector_toggle = "{{ user_vector_toggle }}";
+                if (!(userAccount != "None" && currentGameTitle === undefined))
+                    vector_toggle = "{{ user_vector_toggle }}";
             {% endif %}
         </script>
         <script src="/static/js/search.js"></script>
