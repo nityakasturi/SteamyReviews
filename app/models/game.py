@@ -207,11 +207,11 @@ class Game(object):
                     islice(utils.table_scan(cls, FilterExpression=attr_cond, Limit=limit), limit))
 
     @classmethod
-    def compute_library_vector(cls, app_id_list):
+    def compute_library_vector(cls, app_id_list, playtimes):
         library_vector = np.zeros(Game.__compressed_matrix.shape[1])
-        for app_id in app_id_list:
+        for app_id, pt in zip(app_id_list, playtimes):
             if app_id in Game.__app_id_to_index:
-                library_vector += Game.__compressed_matrix[Game.__app_id_to_index[app_id]]
+                library_vector += cls.__game_cache[app_id].vector() * np.log(pt + 1)
         library_vector /= np.linalg.norm(library_vector)
         return library_vector
 
@@ -220,6 +220,16 @@ class Game(object):
         scores = cls.__compressed_matrix.dot(query_vector)
         return [(scores[index], cls.get(cls.__app_ids[index]))
                 for index in np.argsort(scores)[::-1]]
+
+    @classmethod
+    def get_vector_best_features(cls, vector, json_format=False):
+        best_features = np.argsort(vector)[::-1][:MAX_SPIDER_FEATURES]
+        best_features.sort()
+        if json_format:
+            return (json.dumps(vector[best_features].tolist()),
+                    json.dumps(cls.__dimensions[best_features].tolist()))
+        else:
+            return vector[best_features], cls.__dimensions[best_features]
 
     def __init__(self, app_id, name, developer, publisher, owners, userscore, num_reviews,
                  score_rank, price, tags, last_updated,  **kwargs):
@@ -305,6 +315,13 @@ class Game(object):
 
     def intersect_features(self, other_game, json_format=False):
         features = self.__vector[other_game.__best_feature_indices]
+        if json_format:
+            return json.dumps(features.tolist())
+        else:
+            return features
+
+    def compare_features(self, library_vector, json_format=False):
+        features = self.__vector[np.argsort(library_vector)[::-1][:MAX_SPIDER_FEATURES]]
         if json_format:
             return json.dumps(features.tolist())
         else:

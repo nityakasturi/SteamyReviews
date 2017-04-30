@@ -6,7 +6,7 @@ $('#game-searchbar').autocomplete({
     	var user_vector = "";
     	if ($('#user-vector-toggle').prop('checked'))
     		user_vector = "&user_vector=on";
-    	
+
         window.location = "/?app_id=" + suggestion.data + user_vector;
     }
 });

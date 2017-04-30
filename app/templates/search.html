@@ -17,10 +17,10 @@
         </div>
         <div class="steam-menu">
             {% if username %}
-                <button class="btn btn-info generic-search-btn ">
+                <a class="btn btn-info generic-search-btn" href="/?only_library_vector=on">
                     <span>Our Picks</span>
                     <span class="btn-desc">From your Steam library</span>
-                </button>
+                </a>
             {% endif %}
             <button class="btn btn-info steam-account user-login" data-toggle="modal" data-target="#login-modal">
                 <span>Login to Steam</span>
@@ -60,7 +60,9 @@
                         <input type="checkbox" id="user-vector-toggle" name="user_vector" data-toggle="toggle" data-on="Yes" data-off="No">
                     </div>
                 {%- endmacro %}
-                {% if username %}
+                {% if library_vector is defined %}
+                    {{ librarytoggle("none") }}
+                {% elif username %}
                     {{ librarytoggle("block") }}
                 {% else %}
                     {{ librarytoggle("none") }}
@@ -80,11 +82,11 @@
         {% if ranking is defined %}
             <!-- With love from https://github.com/BlackrockDigital/startbootstrap-creative -->
             <div class="container-fluid results">
-                <h2 class="result-head">Showing results for: <a href="{{ query_game.steam_url() }}"><span class="emphasize">{{ query_game.name }}</span></a></h2>
-                <!-- <div class="tags text-center" data-tags="{{ query_game.tags_json() }}">
-                    <h3 class="unselectable">Tags generated from game reviews</h3>
-                    <p class="unselectable">Click to remove from results</p>
-                </div> -->
+                {% if library_vector is defined %}
+                    <h2 class="result-head">Showing our top picks based on your library</h2>
+                {% else %}
+                    <h2 class="result-head">Showing results for: <a href="{{ query_game.steam_url() }}"><span class="emphasize">{{ query_game.name }}</span></a></h2>
+                {% endif %}
                 <div class="row no-gutter no-vector-ranking">
                 {% for score, ranked_game in ranking %}
                     <div class="col-sm-4">
@@ -93,7 +95,11 @@
                              data-title="{{ ranked_game.name }}"
                              data-score="{{ score }}"
                              data-tags='{{ ranked_game.tags_json(True, True) | safe }}'
+                             {% if library_vector is defined %}
+                             data-features="{{ ranked_game.compare_features(library_vector, True) | safe }}"
+                             {% else %}
                              data-features="{{ ranked_game.intersect_features(query_game, True) | safe }}"
+                             {% endif %}
                              data-steam-url="{{ ranked_game.steam_url() }}">
                             <img src="{{ ranked_game.steam_image_url() }}" class="result-img">
                             <div class="result-box-caption">
@@ -210,6 +216,7 @@
                 currentGameFeatures = currentGameFeatures.map(Math.log);
             {% endif %}
 
+
             {% if invalid_login is defined and invalid_login %}
                 toggle_modal = true;
             {% endif %}
@@ -217,6 +224,14 @@
             {% if user_vector_toggle is defined %}
                 if (!(userAccount != "None" && currentGameTitle === undefined))
                     vector_toggle = "{{ user_vector_toggle }}";
+            {% endif %}
+
+            {% if library_vector is defined %}
+                currentGameTitle = "Your Steam Library";
+                var currentGameFeatures = {{ library_features | safe }};
+                var currentGameFeatureNames = {{ library_feature_names | safe }};
+                currentGameFeatures = currentGameFeatures.map(Math.log);
+                vector_toggle = "off";
             {% endif %}
         </script>
         <script src="/static/js/search.js"></script>
