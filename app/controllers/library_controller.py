@@ -12,8 +12,6 @@ SECRET_KEY = app.config['SECRET_KEY']
 
 @app.route("/steam/login", methods=['GET', 'POST'])
 def login():
-    if request.method == "GET":
-        return render_template("login.html")
     username = request.form['username']
     redirect_to_home = redirect("/")
     response = make_response(redirect_to_home)

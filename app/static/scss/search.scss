@@ -4,7 +4,7 @@ $auto-stripes-light: hsla(208, 14%, 44%, $auto-stripes-opacity);
 $background: #444444;
 $background-stripes-dark: #000000;
 $background-stripes-light: #222222;
-$error: rgb(244, 83, 66);
+$error: rgb(185, 233, 247);
 $hover: rgb(98, 122, 129);
 $hover-alt: rgb(96, 112, 126);
 $hover-stripes-opacity: 0.97;
@@ -286,6 +286,7 @@ h1 {
 	}
 	.invalid-login {
 		color: $error;
+		font-weight: 600;
 	}
 	.login-btn {
 		background: none;

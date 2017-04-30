@@ -234,7 +234,8 @@ h1 {
   color: white;
   opacity: 1; }
 .modal-dialog .invalid-login {
-  color: #f45342; }
+  color: #b9e9f7;
+  font-weight: 600; }
 .modal-dialog .login-btn {
   background: none;
   color: #FFFFFF;
