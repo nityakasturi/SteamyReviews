@@ -53,7 +53,11 @@ $(document).ready(function() {
     });
 
     $(".details-query").click(function() {
-        window.location.replace("/?app_id=" + selectedAppID);
+        var user_vector = "";
+        if ($('#user-vector-toggle').prop('checked'))
+            user_vector = "&user_vector=on";
+
+        window.location.replace("/?app_id=" + selectedAppID + user_vector);
     });
 
     $(".logout").click(function() {

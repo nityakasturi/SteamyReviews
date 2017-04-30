@@ -55,15 +55,15 @@
                 <button type="submit" class="btn btn-info">Submit</button>
 
                 {% macro librarytoggle(value) -%}
-                    <div class="toggle-box" style="visibility: {{ value }}">
+                    <div class="toggle-box" style="display: {{ value }}">
                         <span class="toggle-text">Include data from Steam library</span>
                         <input type="checkbox" id="user-vector-toggle" name="user_vector" data-toggle="toggle" data-on="Yes" data-off="No">
                     </div>
                 {%- endmacro %}
                 {% if username %}
-                    {{ librarytoggle("visible") }}
+                    {{ librarytoggle("block") }}
                 {% else %}
-                    {{ librarytoggle("hidden") }}
+                    {{ librarytoggle("none") }}
                 {% endif %}
             </form>
             {% if didyoumean1 is defined %}
