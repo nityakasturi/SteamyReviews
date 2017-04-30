@@ -9,10 +9,10 @@
         <img class="steam-back" src="/static/steam.png">
         <h1>STEAMY REVIEWS</h1>
         <div class="overlay"></div>
-        <!-- <div class="topcorner">
-            <p>Project name: {{ name }}</p>
-            <p>Student NetIDs: {{ netid }}</p>
-        </div> -->
+        <div class="topcorner">
+            <!-- <p>Project name: {{ name }}</p>
+            <p>Student NetIDs: {{ netid }}</p> -->
+        </div>
         <button class="btn btn-info steam-account user-login" data-toggle="modal" data-target="#login-modal">
             <span>Login to Steam</span>
             <span class="btn-desc">For personalized suggestions</span>
@@ -126,7 +126,12 @@
                     <form action="/steam/login" method="post">
                     <div class="modal-body">
                         <p>Logging into Steam helps us personalize search results and suggest games based on your library.
-                        <br>We don't store any of your personal data. This site is not associated with Valve Corp.</p>
+                        <br>We don't store any of your data on our server. This site is not associated with Valve Corp.</p>
+                        {% if invalid_login is defined and invalid_login %}
+                            <p class="invalid-login" style="font-weight: 600; color: rgb(185, 233, 247);">
+                                Invalid username. Please try again.
+                            </p>
+                        {% endif %}
                         <div class="form-group">
                             <input class="login-input form-input" name="username" type="text" placeholder="Steam ID">
                         </div>
@@ -148,12 +153,16 @@
 
         <script>
             var userAccount = "{{ username }}";
-            var currentGameTitle;
+            var currentGameTitle, toggle_modal;
             {% if query_game is defined %}
                 currentGameTitle = "{{ query_game.name }}";
                 var currentGameFeatureNames = {{ query_game.best_feature_names(True) | safe }};
                 var currentGameFeatures = {{ query_game.best_features(True) | safe }};
                 currentGameFeatures = currentGameFeatures.map(Math.login);
+            {% endif %}
+
+            {% if invalid_login is defined and invalid_login %}
+                toggle_modal = true;
             {% endif %}
         </script>
         <script src="/static/js/search.js"></script>

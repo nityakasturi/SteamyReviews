@@ -15,6 +15,11 @@ $(document).ready(function() {
         $('html, body').animate({
             scrollTop: $(".global-search").offset().top - 15
         }, 400);
+    }   
+
+    if (toggle_modal !== undefined) {
+        $("#login-modal").modal();
+        $('.login-input').focus();
     }
 
     // Handle event listeners

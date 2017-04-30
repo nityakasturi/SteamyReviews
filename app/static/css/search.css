@@ -233,6 +233,8 @@ h1 {
 .modal-dialog .close {
   color: white;
   opacity: 1; }
+.modal-dialog .invalid-login {
+  color: #f45342; }
 .modal-dialog .login-btn {
   background: none;
   color: #FFFFFF;

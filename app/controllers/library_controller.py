@@ -43,6 +43,10 @@ def login():
                 games_list.append(int(app_id))
             library_vector = Game.compute_library_vector(games_list)
             response.set_cookie("library_vector", value=json.dumps(library_vector.tolist()))
+        else:
+            return render_template("search.html",
+                               username=request.cookies.get("username"),
+                               invalid_login=True)
     elif request.cookies.get('username'):
         del session["steam_ID"]
         del session["library_vector"]
