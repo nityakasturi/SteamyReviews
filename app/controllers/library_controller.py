@@ -1,21 +1,18 @@
 from __future__ import print_function
 
-from app import app
 import requests
 import json
 
-from . import accounts, request, render_template, session, redirect, make_response
-from app.irsystem.models.search import do_jaccard, do_cosine_sim
-from app.steam.models import Game
+from flask import request, render_template, session, redirect, make_response
+from app import app
+from app.models import Game
 
 STEAM_API_KEY = app.config['STEAM_API_KEY']
 SECRET_KEY = app.config['SECRET_KEY']
-#app.secret_key = SECRET_KEY
 
-
-@accounts.route("/login", methods=['GET', 'POST'])
+@app.route("/steam/login", methods=['GET', 'POST'])
 def login():
-    if (request.method == "GET"):
+    if request.method == "GET":
         return render_template("login.html")
     username = request.form['username']
     redirect_to_home = redirect("/")

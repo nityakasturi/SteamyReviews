@@ -7,3 +7,9 @@ migrations
 .sass-cache/
 SteamyReviews.sublime-project
 SteamyReviews.sublime-workspace
+data/reviews.gzip
+data/uncompressed_reviews.json
+data/descriptions
+data/reviews_1000_tokens/
+data/reviews_5000_tokens/
+*.mallet

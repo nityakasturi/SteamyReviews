@@ -12,12 +12,10 @@ import time
 
 from . import Review
 from app import app
-from app.dynamodb import dynamodb, utils
-from app.steam.util import data_file, mallet_file
+from app.dynamodb import db, utils
+from app.utils import data_file, mallet_file
 from bs4 import BeautifulSoup
 from boto3.dynamodb.conditions import Key, Attr
-from botocore.exceptions import ClientError
-from cachetools import LRUCache, Cache
 from decimal import Decimal
 from datetime import datetime
 from functools import partial
@@ -44,9 +42,10 @@ class GameNotFoundException(Exception):
 
 class Game(object):
     table_name = "apps"
-    table = dynamodb.Table(table_name)
+    table = db.Table(table_name)
     hash_key = ("app_id", utils.NUMBER)
     sorting_key = None
+
     __app_ids = None
     __app_id_to_index = None
     __compressed_matrix = None
@@ -74,10 +73,6 @@ class Game(object):
         cls.__name_inverted_index = {game.normalized_name: game.app_id
                                      for game in cls.__game_cache.itervalues()}
         cls.__dimensions = load_feature_names()
-
-    @classmethod
-    def _create_table(cls):
-        utils.create_dynamo_table(cls)
 
     @classmethod
     def get_from_steamspy(cls, app_id):
