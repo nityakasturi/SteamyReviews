@@ -18,6 +18,8 @@ MAX_RANK_RESULTS = 27
 def search():
     app_id = request.args.get("app_id", "").strip() or None
     query = request.args.get("search", "").strip() or None
+    user_vector_toggle = request.args.get("user_vector", "") or "off"
+    print(user_vector_toggle)
     if app_id is not None and app_id.isdigit():
         game = Game.get(int(app_id))
         if game is not None:
@@ -26,6 +28,7 @@ def search():
             return render_template("search.html",
                                    no_such_app_id=True,
                                    username=request.cookies.get("username"),
+                                   user_vector_toggle=user_vector_toggle,
                                    **DEFAULT_KWARGS)
     elif query is not None and len(query) > 0:
         game = Game.find_by_name(query)
@@ -39,17 +42,24 @@ def search():
                                    didyoumean2=didyoumean2,
                                    query=query,
                                    username=request.cookies.get("username"),
+                                   user_vector_toggle=user_vector_toggle,
                                    **DEFAULT_KWARGS)
 
     else:
         return render_template("search.html",
                                username=request.cookies.get("username"),
+                               user_vector_toggle=user_vector_toggle,
                                **DEFAULT_KWARGS)
 
 def render_ranking_page(game):
     username = request.cookies.get("username")
+
+    user_vector_toggle = request.args.get("user_vector", "") or "off"
+    if username is None and user_vector_toggle == "on":
+        user_vector_toggle = "off"
+
     library_vector = None
-    if "library_vector" in request.cookies:
+    if ("library_vector" in request.cookies) and user_vector_toggle:
         library_vector = np.array(json.loads(request.cookies.get("library_vector")))
     app.logger.error("Getting ranking")
     ranking = do_cosine_sim(game, max_results=MAX_RANK_RESULTS, library_vector=library_vector)
@@ -58,6 +68,7 @@ def render_ranking_page(game):
                            query_game=game,
                            ranking=ranking,
                            username=username,
+                           user_vector_toggle=user_vector_toggle,
                            **DEFAULT_KWARGS)
 
 def jaccard_sim(tag_set1, tag_set2):

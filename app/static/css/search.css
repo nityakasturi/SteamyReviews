@@ -101,7 +101,8 @@ h1 {
   font-weight: 600;
   font-size: 23px;
   margin-left: 10px;
-  transition: 0.15s ease-in-out; }
+  transition: 0.15s ease-in-out;
+  outline: none; }
 
 .btn:hover {
   background: none;
@@ -212,6 +213,35 @@ h1 {
 .global-search {
   position: relative;
   top: 0px; }
+  .global-search .toggle {
+    width: 70px !important;
+    height: 37px !important;
+    margin-left: 0px; }
+    .global-search .toggle .toggle-handle {
+      background: #FFFFFF; }
+    .global-search .toggle .toggle-handle:hover {
+      border-color: #FFFFFF; }
+    .global-search .toggle .toggle-on {
+      margin-left: 0px;
+      font-size: 14px;
+      border: 0px; }
+    .global-search .toggle .toggle-off {
+      margin-left: 0px;
+      color: #FFFFFF;
+      background: none;
+      font-size: 14px;
+      border: 0px;
+      box-shadow: none; }
+  .global-search .toggle-box {
+    display: block;
+    margin-top: 30px; }
+  .global-search .toggle-text {
+    position: relative;
+    top: 2px;
+    margin-right: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase; }
 
 #login-modal {
   background: rgba(30, 30, 30, 0.9); }
@@ -338,47 +368,52 @@ h1 {
 
 .steam-back {
   position: absolute;
-  bottom: 58%;
+  bottom: 59%;
   left: 50%;
   width: 40%;
-  max-width: 500px;
+  max-width: 400px;
+  min-width: 280px;
   transform: translateX(-50%);
   opacity: 0.7;
   z-index: 0; }
 
-.steam-account {
-  display: none;
+.steam-menu {
   position: absolute;
   top: 15px;
-  right: 15px;
-  margin: 0; }
-  .steam-account #user-menu-dropdown {
-    margin-left: 0px !important; }
-  .steam-account #user-menu-dropdown:active {
+  right: 15px; }
+  .steam-menu .generic-search-btn {
+    margin-bottom: 15px;
+    display: block; }
+  .steam-menu .steam-account {
+    float: right;
+    display: none;
+    margin: 0; }
+    .steam-menu .steam-account #user-menu-dropdown {
+      margin-left: 0px !important; }
+    .steam-menu .steam-account #user-menu-dropdown:active {
+      border-color: #627a81; }
+    .steam-menu .steam-account .dropdown-menu {
+      background: none;
+      border-radius: 0px;
+      border: 3px solid #FFFFFF;
+      box-shadow: none;
+      margin-top: -2px;
+      width: 100%; }
+      .steam-menu .steam-account .dropdown-menu li a {
+        color: #FFFFFF;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        border-bottom: none; }
+      .steam-menu .steam-account .dropdown-menu li a:hover {
+        background: #FFFFFF;
+        border-bottom: none;
+        color: #627a81; }
+      .steam-menu .steam-account .dropdown-menu .last {
+        border-bottom: none; }
+  .steam-menu .steam-account:focus {
     border-color: #627a81; }
-  .steam-account .dropdown-menu {
-    background: none;
-    border-radius: 0px;
-    border: 3px solid #FFFFFF;
-    box-shadow: none;
-    margin-top: -2px;
-    width: 100%; }
-    .steam-account .dropdown-menu li a {
-      color: #FFFFFF;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 600;
-      text-transform: uppercase;
-      border-bottom: none; }
-    .steam-account .dropdown-menu li a:hover {
-      background: #FFFFFF;
-      border-bottom: none;
-      color: #627a81; }
-    .steam-account .dropdown-menu .last {
-      border-bottom: none; }
-
-.steam-account:focus {
-  border-color: #627a81; }
 
 .suggested {
   color: #FFFFFF;

@@ -6,8 +6,14 @@ $(document).ready(function() {
     var detailsRadarChart;
     var selectedAppID;
 
-    if (userAccount != "None")
+    if (userAccount != "None") {
         $(".user-menu").fadeIn(150);
+        $('#user-vector-toggle').bootstrapToggle({
+            on: 'Yes',
+            off: 'No'
+        });
+        $('#user-vector-toggle').bootstrapToggle(vector_toggle);
+    }
     else
         $(".user-login").fadeIn(150);
 

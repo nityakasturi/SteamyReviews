@@ -1,8 +1,10 @@
 <html>
     <title>{{ name }}</title>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,600" rel="stylesheet">
         <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/static/css/bootstrap2-toggle.min.css">
         <link rel="stylesheet" href="/static/css/search.css">
     </head>
     <body>
@@ -13,18 +15,26 @@
             <!-- <p>Project name: {{ name }}</p>
             <p>Student NetIDs: {{ netid }}</p> -->
         </div>
-        <button class="btn btn-info steam-account user-login" data-toggle="modal" data-target="#login-modal">
-            <span>Login to Steam</span>
-            <span class="btn-desc">For personalized suggestions</span>
-        </button>
-        <div class="dropdown steam-account user-menu">
-            <button class="btn btn-info" id="user-menu-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <span class="btn-desc">Logged in as</span>
-                <span>{{ username }} <span class="caret"></span></span>
+        <div class="steam-menu">
+            {% if username %}
+                <button class="btn btn-info generic-search-btn ">
+                    <span>General Suggestions</span>
+                    <span class="btn-desc">From your Steam library</span>
+                </button>
+            {% endif %}
+            <button class="btn btn-info steam-account user-login" data-toggle="modal" data-target="#login-modal">
+                <span>Login to Steam</span>
+                <span class="btn-desc">For personalized suggestions</span>
             </button>
-            <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="user-menu-dropdown">
-                <li><a class="logout unselectable">Logout</a></li>
-            </ul>
+            <div class="dropdown steam-account user-menu">
+                <button class="btn btn-info" id="user-menu-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="btn-desc">Logged in as</span>
+                    <span>{{ username }} <span class="caret"></span></span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="user-menu-dropdown">
+                    <li><a class="logout unselectable">Logout</a></li>
+                </ul>
+            </div>
         </div>
         <div class="container">
             <form class="form-inline global-search">
@@ -41,12 +51,21 @@
                         {{ searchbar("") }}
                     {% endif %}
                 </div>
+
                 <button type="submit" class="btn btn-info">Submit</button>
+
+                {% macro librarytoggle(value) -%}
+                    <div class="toggle-box" style="visibility: {{ value }}">
+                        <span class="toggle-text">Include data from Steam library</span>
+                        <input type="checkbox" id="user-vector-toggle" name="user_vector" data-toggle="toggle" data-on="Yes" data-off="No">
+                    </div>
+                {%- endmacro %}
+                {% if username %}
+                    {{ librarytoggle("visible") }}
+                {% else %}
+                    {{ librarytoggle("hidden") }}
+                {% endif %}
             </form>
-<!--             <button class="btn btn-info">
-                <span>Top Steam library suggestions</span>
-                <span class="btn-desc">Ignoring the query field</span>
-            </button> -->
             {% if didyoumean1 is defined %}
                  <h2 class="suggested">
                     We couldn't find anything for <span class="emphasize">{{query|e}}</span>!
@@ -146,6 +165,7 @@
 
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
         <script src="/static/js/bootstrap.min.js"></script>
+        <script src="/static/js/bootstrap2-toggle.min.js"></script>
         <script src="/static/js/chart.min.js"></script>
 
         <script src="/static/js/jquery.autocomplete.js"></script>
@@ -153,16 +173,21 @@
 
         <script>
             var userAccount = "{{ username }}";
+            var vector_toggle = "on";
             var currentGameTitle, toggle_modal;
             {% if query_game is defined %}
                 currentGameTitle = "{{ query_game.name }}";
                 var currentGameFeatureNames = {{ query_game.best_feature_names(True) | safe }};
                 var currentGameFeatures = {{ query_game.best_features(True) | safe }};
-                currentGameFeatures = currentGameFeatures.map(Math.login);
+                currentGameFeatures = currentGameFeatures.map(Math.log);
             {% endif %}
 
             {% if invalid_login is defined and invalid_login %}
                 toggle_modal = true;
+            {% endif %}
+
+            {% if user_vector_toggle is defined %}
+                vector_toggle = "{{ user_vector_toggle }}";
             {% endif %}
         </script>
         <script src="/static/js/search.js"></script>
