@@ -6,11 +6,11 @@ import os
 import requests
 import re
 
-from app.steam.models import Review, Game, Tag
-from app.steam.util import data_file
-from app.steam.models.game import iter_all_games
-from app.steam.models.review import saved_review_generator
-from app.steam.models.tag import compute_reverse_index, create_tag_list
+from app.models import Review, Game, Tag
+from app.utils import data_file
+from app.models.game import iter_all_games
+from app.models.review import saved_review_generator
+from app.models.tag import compute_reverse_index, create_tag_list
 from datetime import datetime
 
 def refresh_games_table():

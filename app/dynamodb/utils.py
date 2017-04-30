@@ -1,16 +1,14 @@
 from __future__ import print_function
 
-from . import dynamodb
+from app import db
 from botocore.exceptions import ClientError
-from decimal import Decimal
-from datetime import datetime, date
 from progressbar import ProgressBar, UnknownLength
 
 NUMBER = "N"
 STRING = "S"
 
 def create_dynamo_table(cls):
-    matching_tables = [table for table in dynamodb.tables.all() if table.name == cls.table_name]
+    matching_tables = [table for table in db.tables.all() if table.name == cls.table_name]
     if len(matching_tables) != 0:
         print("Table `%s` already exists. Cannot create, skipping."%cls.table_name)
     else:
@@ -25,7 +23,7 @@ def create_dynamo_table(cls):
             attribute_definitions.append({'AttributeName': cls.sorting_key[0],
                                           'AttributeType': cls.sorting_key[1]})
 
-        dynamodb.create_table(
+        db.create_table(
             TableName=cls.table_name,
             KeySchema=key_schema,
             AttributeDefinitions=attribute_definitions,

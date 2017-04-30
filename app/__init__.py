@@ -5,7 +5,6 @@ monkey.patch_all()
 # Imports
 import os
 from flask import Flask, render_template
-from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
 import boto3
 
@@ -13,34 +12,25 @@ import boto3
 socketio = SocketIO()
 app = Flask(__name__)
 app.config.from_object(os.environ["APP_SETTINGS"])
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 import nltk
-# noop if dataset already downloaded!
-nltk.download("punkt")
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download("punkt")
 
 # DB
-db = SQLAlchemy(app)
-dynamodb = boto3.resource("dynamodb",
-                          region_name=app.config["DYNAMO_REGION"],
-                          endpoint_url=app.config["DYNAMO_DATABASE_URI"])
+db = boto3.resource("dynamodb",
+                    region_name=app.config["DYNAMO_REGION"],
+                    endpoint_url=app.config["DYNAMO_DATABASE_URI"])
 s3 = boto3.resource("s3", region_name=app.config["DYNAMO_REGION"])
 
-from app.steam.models import Review
-Review._create_table()
 
-from app.steam.models import Tag
-Tag._create_table()
+from app import models
+models.initialize()
 
-from app.steam.models import Game
-Game._load_caches()
-Game._create_table()
-
-# Import + Register Blueprints
-from app.accounts import accounts as accounts
-app.register_blueprint(accounts)
-from app.irsystem import irsystem as irsystem
-app.register_blueprint(irsystem)
+# Initialize the controllers
+from app import controllers
 
 # Initialize app w/SocketIO
 socketio.init_app(app)

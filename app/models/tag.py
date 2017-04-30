@@ -7,9 +7,9 @@ import requests
 import re
 
 from . import Game
-from app.steam.models.game import iter_all_games
-from app.dynamodb import dynamodb, utils
-from app.steam.util import data_file
+from app.dynamodb import db, utils
+from app.models.game import iter_all_games
+from app.utils import data_file
 from bs4 import BeautifulSoup as BS
 from collections import defaultdict
 from datetime import datetime
@@ -21,15 +21,12 @@ class TagDoesNotExistException(Exception):
 
 class Tag(object):
     table_name = "tags"
-    table = dynamodb.Table(table_name)
+    table = db.Table(table_name)
     hash_key = ("tag_name", utils.STRING)
     sorting_key = ("weight", utils.NUMBER)
+
     __tag_cache = None
     __last_refresh = None
-
-    @classmethod
-    def _create_table(cls):
-        utils.create_dynamo_table(cls)
 
     @classmethod
     def from_steamspy_row(cls, row, tag_reverse_index):
@@ -78,8 +75,8 @@ class Tag(object):
     def __refresh_cache(cls):
         if (cls.__tag_cache is None
             or cls.__last_refresh is None
-            # refresh the cache if it's more than an hour old
-            or (cls.__last_refresh - datetime.now()).total_seconds() > 3600):
+            # refresh the cache if it's more than 24 hours old
+            or (cls.__last_refresh - datetime.now()).total_seconds() > 24 *3600):
             # games = list(iter_all_games())
             tag_reverse_index = compute_reverse_index(iter_all_games())
             tags = create_tag_list(tag_reverse_index)

@@ -8,8 +8,8 @@ import re
 import zlib
 
 from app import s3
-from app.dynamodb import dynamodb, utils
-from app.steam.util import data_file
+from app.dynamodb import db, utils
+from app.utils import data_file
 from bs4 import BeautifulSoup as BS
 from botocore.exceptions import ClientError
 from cStringIO import StringIO
@@ -32,15 +32,12 @@ MAX_REVIEWS = 250
 
 class Review(object):
     table_name = "reviews"
-    table = dynamodb.Table(table_name)
+    table = db.Table(table_name)
     hash_key = ("app_id", utils.NUMBER)
     sorting_key = ("review_date_review_id", utils.STRING)
+
     bucket_name = "steamyreviews"
     bucket = s3.Bucket(bucket_name)
-
-    @classmethod
-    def _create_table(cls):
-        utils.create_dynamo_table(cls)
 
     @classmethod
     def from_review_soup(cls, app_id, review_soup):

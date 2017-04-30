@@ -7,9 +7,9 @@ import requests
 import re
 import sys
 
-from app.steam.models import Review
-from app.steam.models.game import iter_all_games
-from app.steam.util import data_file
+from app.models import Review
+from app.models.game import iter_all_games
+from app.utils import data_file
 from argparse import ArgumentParser
 from datetime import datetime
 from random import sample

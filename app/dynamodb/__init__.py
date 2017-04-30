@@ -1,1 +1,1 @@
-from app import dynamodb
+from app import db
