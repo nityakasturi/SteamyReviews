@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-import app
 import json
 import numpy as np
 
@@ -52,6 +51,7 @@ def render_ranking_page(game):
     library_vector = None
     if "library_vector" in request.cookies:
         library_vector = np.array(json.loads(request.cookies.get("library_vector")))
+    app.logger.error("Getting ranking")
     ranking = do_cosine_sim(game, max_results=MAX_RANK_RESULTS, library_vector=library_vector)
     app.logger.info("Results for " + game.normalized_name + ": " + str(ranking))
     return render_template("search.html",
@@ -83,4 +83,4 @@ def do_jaccard(query, max_results):
         return scores[:max_results]
 
 def do_cosine_sim(query, max_results, library_vector):
-    return Game.get_ranking_for_game(query, library_vector)[:max_results]
+    return query.get_ranking(library_vector)[:max_results]

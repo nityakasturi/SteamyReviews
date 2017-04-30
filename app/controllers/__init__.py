@@ -1,2 +1,1 @@
-from app.controllers import library_controller
-from app.controllers import search_controller
+from app.controllers import autocomplete_controller, library_controller, search_controller

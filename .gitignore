@@ -3,6 +3,7 @@
 .map
 venv
 migrations
+.map
 .ipynb_checkpoints/
 .sass-cache/
 SteamyReviews.sublime-project

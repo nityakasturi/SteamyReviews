@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 
 import csv
+import base64
 import json
 import logging
 import numpy as np
@@ -21,6 +22,7 @@ from datetime import datetime
 from functools import partial
 from itertools import islice, imap
 from Levenshtein import distance
+from sklearn.preprocessing import normalize as normalize_matrix
 
 reviews_re = re.compile(r"\(([0-9,]+) reviews?\)")
 userscore_to_digit = {
@@ -35,6 +37,8 @@ userscore_to_digit = {
     "Overwhelmingly Negative": 0
 }
 digit_to_userscore = {score: r for r,score in userscore_to_digit.iteritems()}
+
+MAX_SPIDER_FEATURES = app.config["MAX_SPIDER_FEATURES"]
 
 class GameNotFoundException(Exception):
     def __init__(self, app_id):
@@ -61,8 +65,8 @@ class Game(object):
 
         # So we can pre-compute the ranking for every single game, since the compressed matrix is
         # static per instance. Saves us a couple cycles
-        similarities = cls.__compressed_matrix.dot(cls.__compressed_matrix.T)
-        cls.__ranking = np.array([cls.__app_ids[np.argsort(row)[::-1]] for row in similarities])
+        cls.__similarities = cls.__compressed_matrix.dot(cls.__compressed_matrix.T)
+        cls.__ranking = np.array([np.argsort(row)[::-1] for row in cls.__similarities])
 
         cls.__app_id_to_index = {app_id: i for i, app_id in enumerate(cls.__app_ids)}
 
@@ -212,20 +216,10 @@ class Game(object):
         return library_vector
 
     @classmethod
-    def get_ranking_for_game(cls, query, library_vector, bias_weight=0.3):
-        if query.app_id not in cls.__app_id_to_index:
-            raise GameNotFoundException(query.app_id)
-        if library_vector is not None:
-            return Game.compute_ranking_for_vector(query.vector() + library_vector * bias_weight)
-        else:
-            return [cls.get(app_id)
-                    for app_id in cls.__ranking[cls.__app_id_to_index[query.app_id]]
-                    if app_id != query.app_id]
-
-    @classmethod
     def compute_ranking_for_vector(cls, query_vector):
-        return [cls.get(cls.__app_ids[index])
-                for index in np.argsort(cls.__compressed_matrix.dot(query_vector))[::-1]]
+        scores = cls.__compressed_matrix.dot(query_vector)
+        return [(scores[index], cls.get(cls.__app_ids[index]))
+                for index in np.argsort(scores)[::-1]]
 
     def __init__(self, app_id, name, developer, publisher, owners, userscore, num_reviews,
                  score_rank, price, tags, last_updated,  **kwargs):
@@ -245,8 +239,11 @@ class Game(object):
         self.last_updated = last_updated
         if self.app_id not in Game.__app_id_to_index:
             return
-        self.__vector = Game.__compressed_matrix[Game.__app_id_to_index[self.app_id]]
-        self.__best_features = np.argsort(self.vector())[::-1][:app.config["MAX_SPIDER_FEATURES"]]
+        self.__app_index = Game.__app_id_to_index[self.app_id]
+        self.__vector = Game.__compressed_matrix[self.__app_index]
+        self.__best_feature_indices = np.argsort(self.vector())[::-1][:MAX_SPIDER_FEATURES]
+        # This is just so that the spider chart doens't look so *regular*
+        self.__best_feature_indices.sort()
 
     def __repr__(self):
         return "Game(app_id=%d,name=%s)"%(self.app_id, self.normalized_name)
@@ -269,25 +266,45 @@ class Game(object):
     def steam_image_url(self):
         return "http://cdn.akamai.steamstatic.com/steam/apps/%s/header.jpg"%self.app_id
 
-    def tags_json(self):
-        return json.dumps(self.tags)
+    def tags_json(self, just_keys=False, encoded=False):
+        to_return = None
+        if just_keys:
+            to_return = json.dumps(sorted(self.tags.keys(), key=self.tags.get, reverse=True))
+        else:
+            to_return = json.dumps(self.tags)
+        if encoded:
+            return base64.b64encode(to_return)
+        else:
+            return to_return
+
+    def get_ranking(self, library_vector, bias_weight=0.3):
+        if self.app_id not in Game.__app_id_to_index:
+            raise GameNotFoundException(self.app_id)
+        if library_vector is not None:
+            return Game.compute_ranking_for_vector(self.vector() + library_vector * bias_weight)
+        else:
+            ranking = Game.__ranking[self.__app_index]
+            scores = Game.__similarities[self.__app_index, ranking]
+            return [(score, Game.get(Game.__app_ids[app_index]))
+                    for score, app_index in zip(scores, ranking)
+                    if app_index != self.__app_index]
 
     def best_features(self, json_format=False):
-        features = self.__vector[self.__best_features]
+        features = self.__vector[self.__best_feature_indices]
         if json_format:
             return json.dumps(features.tolist())
         else:
             return features
 
     def best_feature_names(self, json_format=False):
-        dimensions = Game.__dimensions[self.__best_features]
+        dimensions = Game.__dimensions[self.__best_feature_indices]
         if json_format:
             return json.dumps(dimensions.tolist())
         else:
             return dimensions
 
     def intersect_features(self, other_game, json_format=False):
-        features = self.__vector[other_game.__best_features]
+        features = self.__vector[other_game.__best_feature_indices]
         if json_format:
             return json.dumps(features.tolist())
         else:
@@ -412,9 +429,8 @@ def load_mallet_matrix(filename=mallet_file("40_features", "doc_matrix.tsv")):
         for line in reader:
             app_ids.append(np.int(line[1].split("/")[-1]))
             vector = np.array(map(np.float, line[2:]))
-            vector /= np.linalg.norm(vector)
             vectors.append(vector)
-    return np.array(app_ids), np.array(vectors)
+    return np.array(app_ids), normalize_matrix(np.array(vectors))
 
 def load_feature_names(filename=mallet_file("40_features", "feature_names.csv")):
     with open(filename, "rb") as f:
