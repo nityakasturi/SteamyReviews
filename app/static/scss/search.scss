@@ -127,6 +127,8 @@ h1 {
 	position:absolute;
 	top: 15px;
 	left: 15px;
+	z-index: -1;
+	opacity: 0.5;
 }
 .btn {
 	background: none;
@@ -399,7 +401,7 @@ h1 {
     	background-position: center; 
     	background-repeat: no-repeat;
 		height: 15vw;
-		min-height: 160px;
+		// min-height: 160px;
 
 		.result-box-caption {
 			opacity: 0;
@@ -428,6 +430,12 @@ h1 {
 					color: $white;
 					font-weight: 400;
 					font-size: 18px;
+
+					@media (max-width: 1000px) {
+						position: relative;
+						top: -10px;
+						font-size: 14px;
+					}
 				}
 				.result-text {
 					color: $white;
@@ -435,6 +443,10 @@ h1 {
 					font-size: 23px;
 					text-transform: uppercase;
 					padding: 20px;
+
+					@media (max-width: 1000px) {
+						font-size: 19px;
+					}
 				}
 			}
 		}

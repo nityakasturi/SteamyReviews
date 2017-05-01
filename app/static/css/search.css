@@ -94,7 +94,9 @@ h1 {
 .topcorner {
   position: absolute;
   top: 15px;
-  left: 15px; }
+  left: 15px;
+  z-index: -1;
+  opacity: 0.5; }
 
 .btn {
   background: none;
@@ -323,8 +325,7 @@ h1 {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    height: 15vw;
-    min-height: 160px; }
+    height: 15vw; }
     .results .result-box .result-box-caption {
       opacity: 0;
       background: repeating-linear-gradient(135deg, rgba(98, 122, 129, 0.97), rgba(98, 122, 129, 0.97) 4px, rgba(96, 112, 126, 0.97) 4px, rgba(96, 112, 126, 0.97) 8px);
@@ -344,12 +345,20 @@ h1 {
           color: #FFFFFF;
           font-weight: 400;
           font-size: 18px; }
+          @media (max-width: 1000px) {
+            .results .result-box .result-box-caption .result-box-caption-content .result-expand {
+              position: relative;
+              top: -10px;
+              font-size: 14px; } }
         .results .result-box .result-box-caption .result-box-caption-content .result-text {
           color: #FFFFFF;
           font-weight: 600;
           font-size: 23px;
           text-transform: uppercase;
           padding: 20px; }
+          @media (max-width: 1000px) {
+            .results .result-box .result-box-caption .result-box-caption-content .result-text {
+              font-size: 19px; } }
     .results .result-box .result-img {
       width: 100%; }
   .results .result-head {
