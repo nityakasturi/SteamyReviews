@@ -5,6 +5,7 @@ $(document).ready(function() {
     var detailsExpanded = false;
     var detailsRadarChart;
     var selectedAppID;
+    var unselected = [];
 
     if (userAccount != "None") {
         $(".user-menu").fadeIn(150).css("display", "inline-block");
@@ -21,6 +22,44 @@ $(document).ready(function() {
         $('html, body').animate({
             scrollTop: $(".global-search").offset().top - 15
         }, 400);
+
+        console.log(currentGameFeatureNames);
+
+        var queryString = window.location.search;
+        queryString = queryString.substring(1);
+
+        var parseQueryString = function( queryString ) {
+            var params = {}, queries, temp, i, l;
+            // Split into key/value pairs
+            queries = queryString.split("&");
+            // Convert the array of strings into an object
+            for ( i = 0, l = queries.length; i < l; i++ ) {
+                temp = queries[i].split('=');
+                params[temp[0]] = decodeURI(temp[1]);
+            }
+            return params;
+        };
+        var parsed = parseQueryString(queryString);
+        if ('removed_features' in parsed) {
+            unselected = atob(parseQueryString(queryString)['removed_features']).split(',');
+            console.log(unselected);
+        } else {
+            unselected = null;
+        }
+
+        var tags_div = $(".tags");
+		var search_tags = tags_div.data("tags");
+		for (var key in search_tags) {
+            if (!search_tags.hasOwnProperty(key)) continue;
+            var value = search_tags[key];
+            if (unselected !== null && unselected.indexOf(value) !== -1){
+                tags_div.append("<p class='tag'>" + value + "</p>")
+            } else {
+                tags_div.append("<p class='tag selected'>" + value + "</p>")
+            }
+		}
+        tags_div.append("<button type='submit' class='btn btn-desc' style='display: block; margin: 0 auto;'>Remove/Add Features</button>")
+
     }
 
     if (toggle_modal !== undefined) {
@@ -151,6 +190,29 @@ $(document).ready(function() {
             $(this).removeClass("selected");
         else
             $(this).addClass("selected");
+    });
+
+    $(".btn-desc").click(function() {
+        var p_list = document.querySelectorAll("p.tag");
+        var array = [];
+        for(var i = 0; i < p_list.length; i++) {
+        // Only if there is only single class
+            if(p_list[i].className == 'tag') {
+                // Do something with the element e[i]
+                array.push(p_list[i].innerHTML);
+            }
+        }
+        console.log(array);
+
+        var user_vector = "";
+        if ($('#user-vector-toggle').prop('checked'))
+            user_vector = "&user_vector=on";
+
+        var removed_features = "";
+        if (array.length !== 0){
+            removed_features = "&removed_features=" + btoa(array.join(","));
+        }
+        window.location.replace("/?app_id=" + currentAppID + user_vector + removed_features);
     });
 
     $('#user-vector-toggle').change(function() {

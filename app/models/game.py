@@ -216,10 +216,11 @@ class Game(object):
         return library_vector
 
     @classmethod
-    def compute_ranking_for_vector(cls, query_vector):
+    def compute_ranking_for_vector(cls, query_vector, app_id=None):
         scores = cls.__compressed_matrix.dot(query_vector)
         return [(scores[index], cls.get(cls.__app_ids[index]))
-                for index in np.argsort(scores)[::-1]]
+                for index in np.argsort(scores)[::-1]
+                if cls.__app_ids[index] != app_id]
 
     @classmethod
     def get_vector_best_features(cls, vector, json_format=False):
@@ -287,17 +288,26 @@ class Game(object):
         else:
             return to_return
 
-    def get_ranking(self, library_vector, bias_weight=0.3):
+    def get_ranking(self, library_vector, bias_weight=0.3, removed_features=None):
         if self.app_id not in Game.__app_id_to_index:
             raise GameNotFoundException(self.app_id)
-        if library_vector is not None:
-            return Game.compute_ranking_for_vector(self.vector() + library_vector * bias_weight)
-        else:
+        if library_vector is None and removed_features is None:
             ranking = Game.__ranking[self.__app_index]
             scores = Game.__similarities[self.__app_index, ranking]
             return [(score, Game.get(Game.__app_ids[app_index]))
                     for score, app_index in zip(scores, ranking)
                     if app_index != self.__app_index]
+        else:
+            if library_vector is not None:
+                new_vector = np.copy(self.vector() + library_vector * bias_weight)
+            else:
+                new_vector = np.copy(self.vector())
+            if removed_features is not None:
+                if removed_features is not None:
+                    removed_indices = [self.__dimensions.tolist().index(feature) for feature in removed_features]
+                    for idx in removed_indices:
+                        new_vector[idx] = 0
+            return Game.compute_ranking_for_vector(new_vector, self.app_id)
 
     def best_features(self, json_format=False):
         features = self.__vector[self.__best_feature_indices]

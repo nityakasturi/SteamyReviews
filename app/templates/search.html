@@ -86,7 +86,12 @@
                     <h2 class="result-head">Showing our top picks based on your library</h2>
                 {% else %}
                     <h2 class="result-head">Showing results for: <a href="{{ query_game.steam_url() }}"><span class="emphasize">{{ query_game.name }}</span></a></h2>
+                    <div class="tags text-center" data-tags="{{ query_game.best_feature_names(json_format=True) }}">
+                        <h3 class="unselectable">Tags generated from game reviews</h3>
+                        <p class="unselectable">Click to remove from results</p>
+                    </div>
                 {% endif %}
+
                 <div class="row no-gutter no-vector-ranking">
                 {% for score, ranked_game in ranking %}
                     <div class="col-sm-4">
@@ -209,8 +214,10 @@
             var userAccount = "{{ username }}";
             var vector_toggle = "on";
             var currentGameTitle, toggle_modal;
+            var currentAppID;
             {% if query_game is defined %}
                 currentGameTitle = "{{ query_game.name }}";
+                currentAppID = "{{ query_game.app_id }}";
                 var currentGameFeatureNames = {{ query_game.best_feature_names(True) | safe }};
                 var currentGameFeatures = {{ query_game.best_features(True) | safe }};
                 currentGameFeatures = currentGameFeatures.map(Math.log);

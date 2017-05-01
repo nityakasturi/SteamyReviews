@@ -34,19 +34,22 @@ def search():
     app_id = request.args.get("app_id", "").strip() or None
     query = request.args.get("search", "").strip() or None
     only_library_vector = request.args.get("only_library_vector", "off") == "on"
+    removed_features = request.args.get("removed_features", "").decode('base64').split(",") or None
+    if removed_features == ['']:
+        removed_features = None
 
     if only_library_vector and g.library_vector is not None and g.game_list is not None:
         return render_ranking_page(None, True)
     elif app_id is not None and app_id.isdigit():
         game = Game.get(int(app_id))
         if game is not None:
-            return render_ranking_page(game, False)
+            return render_ranking_page(game, False, removed_features=removed_features)
         else:
             return render_search_template(no_such_app_id=True)
     elif query is not None and len(query) > 0:
         game = Game.find_by_name(query)
         if game is not None:
-            return render_ranking_page(game, False)
+            return render_ranking_page(game, False, removed_features=removed_features)
         else:
             app.logger.info("No result for " + query.encode("ascii", "ignore"))
             didyoumean1, didyoumean2 = Game.correct_game_name(query, max_results=2)
@@ -57,7 +60,7 @@ def search():
     else:
         return render_search_template()
 
-def render_ranking_page(game, only_library_vector):
+def render_ranking_page(game, only_library_vector, removed_features=None):
     if only_library_vector:
         app.logger.info("Getting ranking for library vector query.")
         ranking = [rank
@@ -71,13 +74,13 @@ def render_ranking_page(game, only_library_vector):
                                       library_vector=g.library_vector)
     else:
         app.logger.info("Getting ranking")
-        base_ranking = do_cosine_sim(game, library_vector=None)
+        base_ranking = do_cosine_sim(game, library_vector=None, removed_features=removed_features)
         app.logger.debug("Results for " + game.normalized_name + ": " + str(base_ranking))
 
         user_ranking = None
         if g.library_vector is not None:
             app.logger.info("User is logged in. Also getting vector ranking.")
-            user_ranking = do_cosine_sim(game, library_vector=g.library_vector)
+            user_ranking = do_cosine_sim(game, library_vector=g.library_vector, removed_features=removed_features)
             app.logger.debug("Results for " + game.normalized_name + ": " + str(user_ranking))
 
         return render_search_template(query_game=game,
@@ -115,5 +118,5 @@ def do_jaccard(query, max_results):
     else:
         return scores[:max_results]
 
-def do_cosine_sim(query, library_vector, max_results=MAX_RANK_RESULTS):
-    return query.get_ranking(library_vector)[:max_results]
+def do_cosine_sim(query, library_vector, max_results=MAX_RANK_RESULTS, removed_features=None):
+    return query.get_ranking(library_vector, removed_features=removed_features)[:max_results]
