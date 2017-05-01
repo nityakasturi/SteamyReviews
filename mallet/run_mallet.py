@@ -46,11 +46,11 @@ def main():
     parser.add_argument("model_name", help="Name for new model")
 
     parser.add_argument("-d", "-data-dir", type=str, dest="data_dir",
-                        default="data/reviews_1000_tokens",
+                        default=data_file("reviews_1000_tokens"),
                         help="Path to data. Defaults to `data/reviews_1000_tokens`")
 
     parser.add_argument("-m", "-mallet-data", type=str, dest="mallet_data",
-                        default="mallet/reviews_1000.mallet",
+                        default=mallet_file("reviews_1000.mallet"),
                         help="Path mallet data file. Defaults to `mallet/reviews_1000.mallet")
 
     parser.add_argument("-p", "--model-path", dest="model_path", type=str, nargs="?",
