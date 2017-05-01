@@ -1,3 +1,6 @@
+html, body {
+  height: 100%; }
+
 @media (min-width: 1200px) {
   .container {
     max-width: 970px; } }
@@ -153,6 +156,17 @@ h1 {
     .details-overlay .details-content-wrapper .details-nav {
       position: relative;
       height: 25px; }
+    .details-overlay .details-content-wrapper .details-score {
+      margin-top: 5px;
+      font-size: 16px;
+      font-weight: 600;
+      text-transform: uppercase; }
+      .details-overlay .details-content-wrapper .details-score .details-score-num {
+        position: relative;
+        top: 4px;
+        margin-left: 10px;
+        color: #627a81;
+        font-size: 30px; }
     .details-overlay .details-content-wrapper .details-title {
       position: relative;
       margin: 8px 0px 2px 0px;
@@ -295,9 +309,11 @@ h1 {
 .results {
   margin-top: -15px; }
   .results .no-vector-ranking {
-    display: block; }
+    display: block;
+    margin-top: 25px; }
   .results .vector-ranking {
-    display: none; }
+    display: none;
+    margin-top: 25px; }
   .results .result-box:hover .result-box-caption {
     opacity: 1; }
   .results .result-box {
@@ -339,8 +355,9 @@ h1 {
   .results .tags {
     position: relative;
     left: 50%;
-    transform: translateX(-50%);
-    margin: 25px;
+    transform: translateX(calc(-50% - 27px));
+    margin-left: 25px;
+    margin-right: 25px;
     width: 100%;
     max-width: 800px; }
     .results .tags h3 {
@@ -351,6 +368,10 @@ h1 {
     .results .tags p {
       padding: 0;
       margin-bottom: 15px; }
+    .results .tags .feature-btn {
+      position: relative;
+      top: 5px;
+      color: #FFFFFF; }
     .results .tags .tag {
       border: 3px solid #FFFFFF;
       border-radius: 12px;
@@ -364,11 +385,19 @@ h1 {
       text-transform: lowercase;
       transition: 0.15s ease-in-out; }
     .results .tags .tag:hover {
-      color: #627a81;
-      background: #FFFFFF; }
+      border-color: #627a81; }
+    .results .tags .tag-icon {
+      font-size: 12px;
+      margin-left: 8px; }
     .results .tags .selected {
-      background: #FFFFFF;
-      color: #627a81; }
+      background: rgba(255, 255, 255, 0.2); }
+  .results .toggle-features-btn {
+    position: relative;
+    left: 50%;
+    transform: translateX(calc(-50% - 7px));
+    margin-bottom: 25px;
+    color: #FFFFFF;
+    font-size: 15px; }
 
 .steam-back {
   position: absolute;

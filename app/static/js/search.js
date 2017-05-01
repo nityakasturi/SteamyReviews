@@ -51,12 +51,14 @@ $(document).ready(function() {
             if (!search_tags.hasOwnProperty(key)) continue;
             var value = search_tags[key];
             if (unselected !== null && unselected.indexOf(value) !== -1){
-                tags_div.append("<p class='tag'>" + value + "</p>")
+                tags_div.append("<p class='tag'>" + value +
+                    "<span class='glyphicon glyphicon-remove tag-icon' aria-hidden='true'></span></p>")
             } else {
-                tags_div.append("<p class='tag selected'>" + value + "</p>")
+                tags_div.append("<p class='tag selected'>" + value +
+                    "<span class='glyphicon glyphicon-ok tag-icon' aria-hidden='true'></span></p>")
             }
 		}
-        tags_div.append("<button type='submit' class='btn btn-desc' style='display: block; margin: 0 auto;'>Remove/Add Features</button>")
+        tags_div.append("<button type='submit' class='btn btn-desc feature-btn' style='display: block; margin: 0 auto;'>Apply changes</button>")
 
     }
 
@@ -109,6 +111,7 @@ $(document).ready(function() {
         var updateDetails = function() {
             var gameTitle = resultBox.data("title");
             $(".details-title").text(gameTitle);
+            $(".details-score-num").text(resultBox.data("score").toFixed(3));
             $(".details-img").attr("src", resultBox.children(".result-img").attr("src"));
             $(".details-link").attr("href", resultBox.data("steam-url"));
 
@@ -149,6 +152,7 @@ $(document).ready(function() {
             detailsRadarChart = new Chart(attributeChart, {
                 type: 'radar',
                 data: data,
+                draggable: true,
                 options: {
                     legend: {
                         position: 'bottom'
@@ -184,22 +188,34 @@ $(document).ready(function() {
 
     $(".tag").click(function() {
         var tag = $(this);
-        if (tag.hasClass("selected"))
-            $(this).removeClass("selected");
-        else
-            $(this).addClass("selected");
+        var glyphicon = tag.children(".glyphicon");
+        if (tag.hasClass("selected")) {
+            tag.removeClass("selected");
+            glyphicon.fadeOut(125, function() {
+                glyphicon.removeClass("glyphicon-ok");
+                glyphicon.addClass("glyphicon-remove");
+                glyphicon.fadeIn(125);
+            });
+            
+        }
+        else {
+            tag.addClass("selected");
+            glyphicon.fadeOut(125, function() {
+                glyphicon.addClass("glyphicon-ok");
+                glyphicon.removeClass("glyphicon-remove");
+                glyphicon.fadeIn(125);
+            });
+        }
     });
 
-    $(".btn-desc").click(function() {
-        var p_list = document.querySelectorAll("p.tag");
+    $(".feature-btn").click(function() {
+        var tagList = $(".tags .tag");
         var array = [];
-        for(var i = 0; i < p_list.length; i++) {
-        // Only if there is only single class
-            if(p_list[i].className == 'tag') {
-                // Do something with the element e[i]
-                array.push(p_list[i].innerHTML);
-            }
-        }
+        tagList.each(function() {
+            var tag = $(this);
+            if (! tag.hasClass("selected"))
+                array.push($(this).text());
+        });
 
         var app_id = "";
         if (currentAppID !== undefined){
@@ -221,6 +237,17 @@ $(document).ready(function() {
             removed_features = "&removed_features=" + btoa(array.join(","));
         }
         window.location.replace("/?" + app_id + lib_vector + user_vector + removed_features);
+    });
+
+    $('.toggle-features-btn').click(function() {
+        var btn = $(this);
+        console.log(btn.text());
+        if (btn.text() == "Show features to add/remove from suggestions")
+            btn.text("Hide features to add/remove from suggestions");
+        else
+            btn.text("Show features to add/remove from suggestions");
+
+        btn.blur();
     });
 
     $('#user-vector-toggle').change(function() {

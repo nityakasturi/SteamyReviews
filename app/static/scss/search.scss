@@ -17,6 +17,10 @@ $overlay-shadow: rgba(75, 75, 75, 0.5);
 $overlay-text: #444444;
 $white: #FFFFFF;
 
+html, body {
+    height: 100%;
+}
+
 @media (min-width: 1200px) {
 	.container {
 	    max-width: 970px;
@@ -189,6 +193,20 @@ h1 {
 		.details-nav {
 			position: relative;
 			height: 25px;
+		}
+		.details-score {
+			margin-top: 5px;
+			font-size: 16px;
+			font-weight: 600;
+			text-transform: uppercase;
+
+			.details-score-num {
+				position: relative;
+				top: 4px;
+				margin-left: 10px;
+				color: $hover;
+				font-size: 30px;
+			}
 		}
 		.details-title {
 			position: relative;
@@ -363,9 +381,11 @@ h1 {
 
 	.no-vector-ranking {
 		display: block;
+		margin-top: 25px;
 	}
 	.vector-ranking {
 		display: none;
+		margin-top: 25px;
 	}
 	.result-box:hover .result-box-caption {
 	  opacity: 1;
@@ -426,8 +446,9 @@ h1 {
 	.tags {
 		position: relative;
 		left: 50%;
-		transform: translateX(-50%);
-		margin: 25px;
+		transform: translateX(calc(-50% - 27px));
+		margin-left: 25px;
+		margin-right: 25px;
 		width: 100%;
 		max-width: 800px;
 
@@ -443,6 +464,11 @@ h1 {
 			margin-bottom: 15px;
 		}
 
+		.feature-btn {
+			position: relative;
+			top: 5px;
+			color: $white;
+		}
 		.tag {
 			border: 3px solid $white;
 			border-radius: 12px;
@@ -457,15 +483,27 @@ h1 {
 			transition: 0.15s ease-in-out;
 		}
 		.tag:hover {
-			// border-color: $hover;
-			color: $hover;
-			background: $white;
+			border-color: $hover;
+			// color: $hover;
+			// background: $white;
+		}
+		.tag-icon {
+			font-size: 12px;
+			margin-left: 8px;
 		}
 
 		.selected {
-			background: $white;
-			color: $hover;
+			background: rgba(255, 255, 255, 0.2);
+			// color: $hover;
 		}
+	}
+	.toggle-features-btn {
+		position: relative;
+		left: 50%;
+		transform: translateX(calc(-50% - 7px));
+		margin-bottom: 25px;
+		color: $white;
+		font-size: 15px;
 	}
 }
 .steam-back {

@@ -75,7 +75,7 @@
                 </h2>
             {% endif %}
             {% if no_such_app_id is defined %}
-                <h2 class="suggested">Sorry, but this app ID is not in our database! Don't hesitate to get in touch with us and will consider adding it.</h2>
+                <h2 class="suggested">Sorry, but this app ID is not in our database! Don't hesitate to get in touch with us and we'll consider adding it.</h2>
             {% endif %}
         </div>
 
@@ -84,13 +84,15 @@
             <div class="container-fluid results">
                 {% if library_vector is defined %}
                     <h2 class="result-head">Showing our top picks based on your library</h2>
-                    <div class="tags text-center" data-tags="{{ library_feature_names }}">
+                    <button class="btn toggle-features-btn" type="button" data-toggle="collapse" data-target="#tags-collapse" aria-expanded="false" aria-controls="tags-collapse">Show features to add/remove from suggestions</button>
+                    <div class="collapse tags text-center" id="tags-collapse" data-tags="{{ library_feature_names }}">
                         <h3 class="unselectable">Tags generated from game reviews</h3>
                         <p class="unselectable">Click to remove from results</p>
                     </div>
                 {% else %}
                     <h2 class="result-head">Showing results for: <a href="{{ query_game.steam_url() }}"><span class="emphasize">{{ query_game.name }}</span></a></h2>
-                    <div class="tags text-center" data-tags="{{ query_game.best_feature_names(json_format=True) }}">
+                    <button class="btn toggle-features-btn" type="button" data-toggle="collapse" data-target="#tags-collapse" aria-expanded="false" aria-controls="tags-collapse">Show features to add/remove from suggestions</button>
+                    <div class="collapse tags text-center" id="tags-collapse" data-tags="{{ query_game.best_feature_names(json_format=True) }}">
                         <h3 class="unselectable">Tags generated from game reviews</h3>
                         <p class="unselectable">Click to remove from results</p>
                     </div>
@@ -164,6 +166,9 @@
             <div class="details-body">
             <!-- <img class="details-img"> -->
             <h1 class="details-title unselectable"></h1>
+            <p class="details-score text-center">
+                Suggestion score: <span class="details-score-num">98.7</span>
+            </p>
             <p class="text-center">
                 <a target="_blank" class="details-btn btn details-link">View on Steam</a>
                 <a class="details-btn btn details-query">Use game as query</a>
