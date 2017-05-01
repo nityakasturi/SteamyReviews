@@ -5,6 +5,7 @@ $background: #444444;
 $background-stripes-dark: #000000;
 $background-stripes-light: #222222;
 $error: rgb(185, 233, 247);
+$filler-background: rgb(50, 50, 50);
 $hover: rgb(98, 122, 129);
 $hover-alt: rgb(96, 112, 126);
 $hover-stripes-opacity: 0.97;
@@ -393,6 +394,12 @@ h1 {
 	.result-box {
 		cursor: pointer;
 		overflow: hidden;
+		background: $filler-background;
+		background-size: cover;
+    	background-position: center; 
+    	background-repeat: no-repeat;
+		height: 15vw;
+		min-height: 160px;
 
 		.result-box-caption {
 			opacity: 0;

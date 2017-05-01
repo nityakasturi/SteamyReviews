@@ -111,8 +111,8 @@
                              {% else %}
                              data-features="{{ ranked_game.intersect_features(query_game, True) | safe }}"
                              {% endif %}
-                             data-steam-url="{{ ranked_game.steam_url() }}">
-                            <img src="{{ ranked_game.steam_image_url() }}" class="result-img">
+                             data-steam-url="{{ ranked_game.steam_url() }}"
+                             style="background-image: url({{ ranked_game.steam_image_url() }});">
                             <div class="result-box-caption">
                                 <div class="result-box-caption-content">
                                     <div class="result-text">
@@ -138,8 +138,8 @@
                                  data-score="{{ score }}"
                                  data-tags='{{ ranked_game.tags_json(True, True) | safe }}'
                                  data-features="{{ ranked_game.intersect_features(query_game, True) | safe }}"
-                                 data-steam-url="{{ ranked_game.steam_url() }}">
-                                <img src="{{ ranked_game.steam_image_url() }}" class="result-img">
+                                 data-steam-url="{{ ranked_game.steam_url() }}"
+                                 style="background-image: url({{ ranked_game.steam_image_url() }});">
                                 <div class="result-box-caption">
                                     <div class="result-box-caption-content">
                                         <div class="result-text">

@@ -318,7 +318,13 @@ h1 {
     opacity: 1; }
   .results .result-box {
     cursor: pointer;
-    overflow: hidden; }
+    overflow: hidden;
+    background: #323232;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 15vw;
+    min-height: 160px; }
     .results .result-box .result-box-caption {
       opacity: 0;
       background: repeating-linear-gradient(135deg, rgba(98, 122, 129, 0.97), rgba(98, 122, 129, 0.97) 4px, rgba(96, 112, 126, 0.97) 4px, rgba(96, 112, 126, 0.97) 8px);
