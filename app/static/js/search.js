@@ -207,8 +207,9 @@ $(document).ready(function() {
         }
 
         var lib_vector = "";
-        if ("{{ library_vector }}" !== undefined)
-        lib_vector = "only_library_vector=on";
+        if (currentAppID == undefined){
+            lib_vector = "only_library_vector=on";
+        }
 
         var user_vector = "";
         if ($('#user-vector-toggle').prop('checked')){
