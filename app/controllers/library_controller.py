@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import requests
 import json
+import numpy as np
 
 from flask import request, render_template, session, redirect, make_response
 from app import app
@@ -12,8 +13,6 @@ SECRET_KEY = app.config['SECRET_KEY']
 
 @app.route("/steam/login", methods=['GET', 'POST'])
 def login():
-    if request.method == "GET":
-        return render_template("login.html")
     username = request.form['username']
     redirect_to_home = redirect("/")
     response = make_response(redirect_to_home)
@@ -33,16 +32,22 @@ def login():
                 "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/", params)
             response.set_cookie(
                 "username", value=r3.json()['response']['players'][0]['personaname'])
-            r2 = requests.get("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=" +
-                              STEAM_API_KEY + "&steamid=" +
-                              steamid + "&format=json&include_played_free_games=1")
+            del params["steamids"]
+            params["steamid"] = steamid
+            params["format"] = "json"
+            params["include_played_free_games"] = "1"
+            r2 = requests.get("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/",
+                              params)
             games = r2.json()['response']['games']
-            games_list = []
-            for game in games:
-                app_id = game['appid']
-                games_list.append(int(app_id))
-            library_vector = Game.compute_library_vector(games_list)
+            game_list = [int(game['appid']) for game in games]
+            hours_played = [int(game['playtime_forever']) for game in games]
+            response.set_cookie("game_list", value=json.dumps(game_list))
+            library_vector = Game.compute_library_vector(game_list, hours_played)
             response.set_cookie("library_vector", value=json.dumps(library_vector.tolist()))
+        else:
+            return render_template("search.html",
+                                   username=request.cookies.get("username"),
+                                   invalid_login=True)
     elif request.cookies.get('username'):
         del session["steam_ID"]
         del session["library_vector"]
