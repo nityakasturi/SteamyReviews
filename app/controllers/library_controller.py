@@ -38,6 +38,10 @@ def login():
             params["include_played_free_games"] = "1"
             r2 = requests.get("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/",
                               params)
+            if 'games' not in r2.json()['response']:
+                return render_template("search.html",
+                                       username=request.cookies.get("username"),
+                                       invalid_login=True)
             games = r2.json()['response']['games']
             game_list = [int(game['appid']) for game in games]
             hours_played = [int(game['playtime_forever']) for game in games]
