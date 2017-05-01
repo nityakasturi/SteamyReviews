@@ -4,6 +4,7 @@ $(document).ready(function() {
     var currentGameVector;
     var detailsExpanded = false;
     var detailsRadarChart;
+    var removedFeaturesIdx = [];
     var selectedAppID;
     var unselected = [];
 
@@ -52,10 +53,19 @@ $(document).ready(function() {
             var value = search_tags[key];
             if (unselected !== null && unselected.indexOf(value) !== -1){
                 tags_div.append("<p class='tag'>" + value +
-                    "<span class='glyphicon glyphicon-remove tag-icon' aria-hidden='true'></span></p>")
+                    "<span class='glyphicon glyphicon-remove tag-icon' aria-hidden='true'></span></p>");
+
+                var foundIdx = currentGameFeatureNames.indexOf(value);
+                if (foundIdx != -1) {
+                    currentGameFeatureNames = currentGameFeatureNames.slice(0, foundIdx)
+                        .concat(currentGameFeatureNames.slice(foundIdx + 1, currentGameFeatureNames.length));
+                    currentGameFeatures = currentGameFeatures.slice(0, foundIdx)
+                        .concat(currentGameFeatures.slice(foundIdx + 1, currentGameFeatures.length));
+                    removedFeaturesIdx.push(foundIdx);
+                }
             } else {
                 tags_div.append("<p class='tag selected'>" + value +
-                    "<span class='glyphicon glyphicon-ok tag-icon' aria-hidden='true'></span></p>")
+                    "<span class='glyphicon glyphicon-ok tag-icon' aria-hidden='true'></span></p>");
             }
 		}
         tags_div.append("<button type='submit' class='btn btn-desc feature-btn' style='display: block; margin: 0 auto;'>Apply changes</button>")
@@ -111,7 +121,7 @@ $(document).ready(function() {
         var updateDetails = function() {
             var gameTitle = resultBox.data("title");
             $(".details-title").text(gameTitle);
-            $(".details-score-num").text(resultBox.data("score").toFixed(3));
+            $(".details-score-num").text((resultBox.data("score") * 100).toFixed(1) + "%");
             $(".details-img").attr("src", resultBox.children(".result-img").attr("src"));
             $(".details-link").attr("href", resultBox.data("steam-url"));
 
@@ -123,6 +133,13 @@ $(document).ready(function() {
             selectedAppID = resultBox.data("app-id");
 
             var gameVector = resultBox.data("features").map(Math.log);
+
+            for(idx = 0; idx < removedFeaturesIdx.length; idx += 1) {
+                var feature = removedFeaturesIdx[idx];
+                gameVector = gameVector.slice(0, feature)
+                    .concat(gameVector.slice(feature + 1, gameVector.length));
+            }
+
             var data = {
                 labels: currentGameFeatureNames,
                 datasets: [{
@@ -218,24 +235,21 @@ $(document).ready(function() {
         });
 
         var app_id = "";
-        if (currentAppID !== undefined){
+        if (currentAppID !== undefined)
             app_id = "app_id=" + currentAppID;
-        }
 
         var lib_vector = "";
-        if (currentAppID == undefined){
+        if (currentAppID == undefined)
             lib_vector = "only_library_vector=on";
-        }
 
         var user_vector = "";
-        if ($('#user-vector-toggle').prop('checked')){
+        if ($('#user-vector-toggle').prop('checked'))
             user_vector = "&user_vector=on";
-        }
 
         var removed_features = "";
-        if (array.length !== 0){
+        if (array.length !== 0)
             removed_features = "&removed_features=" + btoa(array.join(","));
-        }
+
         window.location.replace("/?" + app_id + lib_vector + user_vector + removed_features);
     });
 
