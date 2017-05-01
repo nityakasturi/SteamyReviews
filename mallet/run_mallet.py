@@ -32,10 +32,11 @@ def import_data(data_dir, mallet_data, token_regex, **kwargs):
                             stdout=PIPE, shell=True)
     print_output(mallet_process)
 
-def train(input_file, model_path, num_topics, num_top_words, **kwargs):
+def train(input_file, model_path, num_topics, num_top_words, num_iterations, **kwargs):
     mallet_process = Popen(["mallet", "train-topics",
                             "--input", input_file,
                             "--num-topics", str(num_topics),
+                            "--num-iterations", str(num_iterations),
                             "--output-doc-topics", path.join(model_path, "doc_matrix.tsv"),
                             "--output-topic-keys", path.join(model_path, "feature_keywords.tsv"),
                             "--num-top-words", str(num_top_words)], stdout=PIPE, shell=True)
@@ -61,6 +62,9 @@ def main():
 
     parser.add_argument("-w", "--num-top-words", dest="num_top_words", type=int, default=20,
                         help="Number of words to output for each topics")
+
+    parser.add_argument("-i", "--num-iterations", dest="num_iterations", type=int, default=1000,
+                        help="Number of Mallet iterations")
 
     parser.add_argument("--token-regex", dest="token_regex", type=str, default="\\p{L}+",
                         help="Regex to use when tokenizing documents")
