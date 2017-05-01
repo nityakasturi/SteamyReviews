@@ -18,13 +18,12 @@ $(document).ready(function() {
     else
         $(".user-login").fadeIn(150).css("display", "inline-block");
 
-    if (currentGameTitle !== undefined) {
+    if (currentGameTitle !== undefined){
         $('html, body').animate({
             scrollTop: $(".global-search").offset().top - 15
         }, 400);
-
-        console.log(currentGameFeatureNames);
-
+    }
+    if (currentGameTitle !== undefined || "{{ library_vector }}" !== undefined) {
         var queryString = window.location.search;
         queryString = queryString.substring(1);
 
@@ -42,7 +41,6 @@ $(document).ready(function() {
         var parsed = parseQueryString(queryString);
         if ('removed_features' in parsed) {
             unselected = atob(parseQueryString(queryString)['removed_features']).split(',');
-            console.log(unselected);
         } else {
             unselected = null;
         }
@@ -202,17 +200,26 @@ $(document).ready(function() {
                 array.push(p_list[i].innerHTML);
             }
         }
-        console.log(array);
+
+        var app_id = "";
+        if (currentAppID !== undefined){
+            app_id = "app_id=" + currentAppID;
+        }
+
+        var lib_vector = "";
+        if ("{{ library_vector }}" !== undefined)
+        lib_vector = "only_library_vector=on";
 
         var user_vector = "";
-        if ($('#user-vector-toggle').prop('checked'))
+        if ($('#user-vector-toggle').prop('checked')){
             user_vector = "&user_vector=on";
+        }
 
         var removed_features = "";
         if (array.length !== 0){
             removed_features = "&removed_features=" + btoa(array.join(","));
         }
-        window.location.replace("/?app_id=" + currentAppID + user_vector + removed_features);
+        window.location.replace("/?" + app_id + lib_vector + user_vector + removed_features);
     });
 
     $('#user-vector-toggle').change(function() {

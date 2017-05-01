@@ -39,7 +39,7 @@ def search():
         removed_features = None
 
     if only_library_vector and g.library_vector is not None and g.game_list is not None:
-        return render_ranking_page(None, True)
+        return render_ranking_page(None, True, removed_features=removed_features)
     elif app_id is not None and app_id.isdigit():
         game = Game.get(int(app_id))
         if game is not None:
@@ -64,7 +64,7 @@ def render_ranking_page(game, only_library_vector, removed_features=None):
     if only_library_vector:
         app.logger.info("Getting ranking for library vector query.")
         ranking = [rank
-                   for rank in Game.compute_ranking_for_vector(g.library_vector)
+                   for rank in Game.compute_ranking_for_vector(g.library_vector, removed_features=removed_features)
                    if rank[1].app_id not in g.game_list][:MAX_RANK_RESULTS]
         features, feature_names = Game.get_vector_best_features(g.library_vector, True)
         return render_search_template(ranking=ranking,

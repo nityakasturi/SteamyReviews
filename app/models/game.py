@@ -216,8 +216,13 @@ class Game(object):
         return library_vector
 
     @classmethod
-    def compute_ranking_for_vector(cls, query_vector, app_id=None):
-        scores = cls.__compressed_matrix.dot(query_vector)
+    def compute_ranking_for_vector(cls, query_vector, removed_features=None, app_id=None):
+        new_vector = np.copy(query_vector)
+        if removed_features is not None:
+            removed_indices = [cls.__dimensions.tolist().index(feature) for feature in removed_features]
+            for idx in removed_indices:
+                new_vector[idx] = 0
+        scores = cls.__compressed_matrix.dot(new_vector)
         return [(scores[index], cls.get(cls.__app_ids[index]))
                 for index in np.argsort(scores)[::-1]
                 if cls.__app_ids[index] != app_id]
@@ -299,15 +304,10 @@ class Game(object):
                     if app_index != self.__app_index]
         else:
             if library_vector is not None:
-                new_vector = np.copy(self.vector() + library_vector * bias_weight)
+                new_vector = self.vector() + library_vector * bias_weight
             else:
-                new_vector = np.copy(self.vector())
-            if removed_features is not None:
-                if removed_features is not None:
-                    removed_indices = [self.__dimensions.tolist().index(feature) for feature in removed_features]
-                    for idx in removed_indices:
-                        new_vector[idx] = 0
-            return Game.compute_ranking_for_vector(new_vector, self.app_id)
+                new_vector = self.vector()
+            return Game.compute_ranking_for_vector(new_vector, removed_features=removed_features, app_id=self.app_id)
 
     def best_features(self, json_format=False):
         features = self.__vector[self.__best_feature_indices]

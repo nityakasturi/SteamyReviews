@@ -84,6 +84,10 @@
             <div class="container-fluid results">
                 {% if library_vector is defined %}
                     <h2 class="result-head">Showing our top picks based on your library</h2>
+                    <div class="tags text-center" data-tags="{{ library_feature_names }}">
+                        <h3 class="unselectable">Tags generated from game reviews</h3>
+                        <p class="unselectable">Click to remove from results</p>
+                    </div>
                 {% else %}
                     <h2 class="result-head">Showing results for: <a href="{{ query_game.steam_url() }}"><span class="emphasize">{{ query_game.name }}</span></a></h2>
                     <div class="tags text-center" data-tags="{{ query_game.best_feature_names(json_format=True) }}">
