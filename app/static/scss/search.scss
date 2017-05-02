@@ -5,6 +5,7 @@ $background: #444444;
 $background-stripes-dark: #000000;
 $background-stripes-light: #222222;
 $error: rgb(185, 233, 247);
+$filler-background: rgb(50, 50, 50);
 $hover: rgb(98, 122, 129);
 $hover-alt: rgb(96, 112, 126);
 $hover-stripes-opacity: 0.97;
@@ -16,6 +17,10 @@ $overlay-background: #CCCCCC;
 $overlay-shadow: rgba(75, 75, 75, 0.5);
 $overlay-text: #444444;
 $white: #FFFFFF;
+
+html, body {
+    height: 100%;
+}
 
 @media (min-width: 1200px) {
 	.container {
@@ -71,7 +76,6 @@ a:hover {
 	padding: 2px 5px;
 	white-space: nowrap;
 	overflow: hidden;
-	text-transform: uppercase;
 	padding: 7px 12px 7px 12px;
 	transition: 0.1s ease-in-out;
 }
@@ -122,6 +126,8 @@ h1 {
 	position:absolute;
 	top: 15px;
 	left: 15px;
+	z-index: -1;
+	opacity: 0.5;
 }
 .btn {
 	background: none;
@@ -189,6 +195,20 @@ h1 {
 		.details-nav {
 			position: relative;
 			height: 25px;
+		}
+		.details-score {
+			margin-top: 5px;
+			font-size: 16px;
+			font-weight: 600;
+			text-transform: uppercase;
+
+			.details-score-num {
+				position: relative;
+				top: 4px;
+				margin-left: 10px;
+				color: $hover;
+				font-size: 30px;
+			}
 		}
 		.details-title {
 			position: relative;
@@ -363,9 +383,11 @@ h1 {
 
 	.no-vector-ranking {
 		display: block;
+		margin-top: 25px;
 	}
 	.vector-ranking {
 		display: none;
+		margin-top: 25px;
 	}
 	.result-box:hover .result-box-caption {
 	  opacity: 1;
@@ -373,6 +395,12 @@ h1 {
 	.result-box {
 		cursor: pointer;
 		overflow: hidden;
+		background: $filler-background;
+		background-size: cover;
+    	background-position: center; 
+    	background-repeat: no-repeat;
+		height: 15vw;
+		// min-height: 160px;
 
 		.result-box-caption {
 			opacity: 0;
@@ -401,6 +429,12 @@ h1 {
 					color: $white;
 					font-weight: 400;
 					font-size: 18px;
+
+					@media (max-width: 1000px) {
+						position: relative;
+						top: -10px;
+						font-size: 14px;
+					}
 				}
 				.result-text {
 					color: $white;
@@ -408,6 +442,10 @@ h1 {
 					font-size: 23px;
 					text-transform: uppercase;
 					padding: 20px;
+
+					@media (max-width: 1000px) {
+						font-size: 19px;
+					}
 				}
 			}
 		}
@@ -426,8 +464,9 @@ h1 {
 	.tags {
 		position: relative;
 		left: 50%;
-		transform: translateX(-50%);
-		margin: 25px;
+		transform: translateX(calc(-50% - 27px));
+		margin-left: 25px;
+		margin-right: 25px;
 		width: 100%;
 		max-width: 800px;
 
@@ -443,6 +482,11 @@ h1 {
 			margin-bottom: 15px;
 		}
 
+		.feature-btn {
+			position: relative;
+			top: 5px;
+			color: $white;
+		}
 		.tag {
 			border: 3px solid $white;
 			border-radius: 12px;
@@ -457,15 +501,24 @@ h1 {
 			transition: 0.15s ease-in-out;
 		}
 		.tag:hover {
-			// border-color: $hover;
-			color: $hover;
-			background: $white;
+			border-color: $hover;
+		}
+		.tag-icon {
+			font-size: 12px;
+			margin-left: 8px;
 		}
 
 		.selected {
-			background: $white;
-			color: $hover;
+			background: rgba(255, 255, 255, 0.2);
 		}
+	}
+	.toggle-features-btn {
+		position: relative;
+		left: 50%;
+		transform: translateX(calc(-50% - 7px));
+		margin-bottom: 25px;
+		color: $white;
+		font-size: 15px;
 	}
 }
 .steam-back {

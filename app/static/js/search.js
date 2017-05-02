@@ -4,7 +4,9 @@ $(document).ready(function() {
     var currentGameVector;
     var detailsExpanded = false;
     var detailsRadarChart;
+    var removedFeaturesIdx = [];
     var selectedAppID;
+    var unselected = [];
 
     if (userAccount != "None") {
         $(".user-menu").fadeIn(150).css("display", "inline-block");
@@ -17,10 +19,57 @@ $(document).ready(function() {
     else
         $(".user-login").fadeIn(150).css("display", "inline-block");
 
-    if (currentGameTitle !== undefined) {
+    if (currentGameTitle !== undefined){
         $('html, body').animate({
             scrollTop: $(".global-search").offset().top - 15
         }, 400);
+    }
+    if (currentGameTitle !== undefined || "{{ library_vector }}" !== undefined) {
+        var queryString = window.location.search;
+        queryString = queryString.substring(1);
+
+        var parseQueryString = function( queryString ) {
+            var params = {}, queries, temp, i, l;
+            // Split into key/value pairs
+            queries = queryString.split("&");
+            // Convert the array of strings into an object
+            for ( i = 0, l = queries.length; i < l; i++ ) {
+                temp = queries[i].split('=');
+                params[temp[0]] = decodeURI(temp[1]);
+            }
+            return params;
+        };
+        var parsed = parseQueryString(queryString);
+        if ('removed_features' in parsed) {
+            unselected = atob(parseQueryString(queryString)['removed_features']).split(',');
+        } else {
+            unselected = null;
+        }
+
+        var tags_div = $(".tags");
+		var search_tags = tags_div.data("tags");
+		for (var key in search_tags) {
+            if (!search_tags.hasOwnProperty(key)) continue;
+            var value = search_tags[key];
+            if (unselected !== null && unselected.indexOf(value) !== -1){
+                tags_div.append("<p class='tag'>" + value +
+                    "<span class='glyphicon glyphicon-remove tag-icon' aria-hidden='true'></span></p>");
+
+                var foundIdx = currentGameFeatureNames.indexOf(value);
+                if (foundIdx != -1) {
+                    currentGameFeatureNames = currentGameFeatureNames.slice(0, foundIdx)
+                        .concat(currentGameFeatureNames.slice(foundIdx + 1, currentGameFeatureNames.length));
+                    currentGameFeatures = currentGameFeatures.slice(0, foundIdx)
+                        .concat(currentGameFeatures.slice(foundIdx + 1, currentGameFeatures.length));
+                    removedFeaturesIdx.push(foundIdx);
+                }
+            } else {
+                tags_div.append("<p class='tag selected'>" + value +
+                    "<span class='glyphicon glyphicon-ok tag-icon' aria-hidden='true'></span></p>");
+            }
+		}
+        tags_div.append("<button type='submit' class='btn btn-desc feature-btn' style='display: block; margin: 0 auto;'>Apply changes</button>")
+
     }
 
     if (toggle_modal !== undefined) {
@@ -72,6 +121,7 @@ $(document).ready(function() {
         var updateDetails = function() {
             var gameTitle = resultBox.data("title");
             $(".details-title").text(gameTitle);
+            $(".details-score-num").text((resultBox.data("score") * 100).toFixed(1) + "%");
             $(".details-img").attr("src", resultBox.children(".result-img").attr("src"));
             $(".details-link").attr("href", resultBox.data("steam-url"));
 
@@ -83,6 +133,13 @@ $(document).ready(function() {
             selectedAppID = resultBox.data("app-id");
 
             var gameVector = resultBox.data("features").map(Math.log);
+
+            for(idx = 0; idx < removedFeaturesIdx.length; idx += 1) {
+                var feature = removedFeaturesIdx[idx];
+                gameVector = gameVector.slice(0, feature)
+                    .concat(gameVector.slice(feature + 1, gameVector.length));
+            }
+
             var data = {
                 labels: currentGameFeatureNames,
                 datasets: [{
@@ -112,6 +169,7 @@ $(document).ready(function() {
             detailsRadarChart = new Chart(attributeChart, {
                 type: 'radar',
                 data: data,
+                draggable: true,
                 options: {
                     legend: {
                         position: 'bottom'
@@ -147,10 +205,63 @@ $(document).ready(function() {
 
     $(".tag").click(function() {
         var tag = $(this);
-        if (tag.hasClass("selected"))
-            $(this).removeClass("selected");
+        var glyphicon = tag.children(".glyphicon");
+        if (tag.hasClass("selected")) {
+            tag.removeClass("selected");
+            glyphicon.fadeOut(125, function() {
+                glyphicon.removeClass("glyphicon-ok");
+                glyphicon.addClass("glyphicon-remove");
+                glyphicon.fadeIn(125);
+            });
+            
+        }
+        else {
+            tag.addClass("selected");
+            glyphicon.fadeOut(125, function() {
+                glyphicon.addClass("glyphicon-ok");
+                glyphicon.removeClass("glyphicon-remove");
+                glyphicon.fadeIn(125);
+            });
+        }
+    });
+
+    $(".feature-btn").click(function() {
+        var tagList = $(".tags .tag");
+        var array = [];
+        tagList.each(function() {
+            var tag = $(this);
+            if (! tag.hasClass("selected"))
+                array.push($(this).text());
+        });
+
+        var app_id = "";
+        if (currentAppID !== undefined)
+            app_id = "app_id=" + currentAppID;
+
+        var lib_vector = "";
+        if (currentAppID == undefined)
+            lib_vector = "only_library_vector=on";
+
+        var user_vector = "";
+        if ($('#user-vector-toggle').prop('checked'))
+            user_vector = "&user_vector=on";
+
+        var removed_features = "";
+        if (array.length !== 0)
+            removed_features = "&removed_features=" + btoa(array.join(","));
+
+        window.location.replace("/?" + app_id + lib_vector + user_vector + removed_features);
+    });
+
+    $('.toggle-features-btn').click(function() {
+        var btn = $(this);
+        console.log(btn.text());
+        if (btn.text() == "Show features to add/remove from suggestions")
+            btn.text("Hide features to add/remove from suggestions");
         else
-            $(this).addClass("selected");
+            btn.text("Show features to add/remove from suggestions");
+
+        btn.blur();
     });
 
     $('#user-vector-toggle').change(function() {

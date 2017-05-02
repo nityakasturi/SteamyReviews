@@ -1,3 +1,6 @@
+html, body {
+  height: 100%; }
+
 @media (min-width: 1200px) {
   .container {
     max-width: 970px; } }
@@ -42,7 +45,6 @@ a:hover {
   padding: 2px 5px;
   white-space: nowrap;
   overflow: hidden;
-  text-transform: uppercase;
   padding: 7px 12px 7px 12px;
   transition: 0.1s ease-in-out; }
 
@@ -91,7 +93,9 @@ h1 {
 .topcorner {
   position: absolute;
   top: 15px;
-  left: 15px; }
+  left: 15px;
+  z-index: -1;
+  opacity: 0.5; }
 
 .btn {
   background: none;
@@ -153,6 +157,17 @@ h1 {
     .details-overlay .details-content-wrapper .details-nav {
       position: relative;
       height: 25px; }
+    .details-overlay .details-content-wrapper .details-score {
+      margin-top: 5px;
+      font-size: 16px;
+      font-weight: 600;
+      text-transform: uppercase; }
+      .details-overlay .details-content-wrapper .details-score .details-score-num {
+        position: relative;
+        top: 4px;
+        margin-left: 10px;
+        color: #627a81;
+        font-size: 30px; }
     .details-overlay .details-content-wrapper .details-title {
       position: relative;
       margin: 8px 0px 2px 0px;
@@ -295,14 +310,21 @@ h1 {
 .results {
   margin-top: -15px; }
   .results .no-vector-ranking {
-    display: block; }
+    display: block;
+    margin-top: 25px; }
   .results .vector-ranking {
-    display: none; }
+    display: none;
+    margin-top: 25px; }
   .results .result-box:hover .result-box-caption {
     opacity: 1; }
   .results .result-box {
     cursor: pointer;
-    overflow: hidden; }
+    overflow: hidden;
+    background: #323232;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 15vw; }
     .results .result-box .result-box-caption {
       opacity: 0;
       background: repeating-linear-gradient(135deg, rgba(98, 122, 129, 0.97), rgba(98, 122, 129, 0.97) 4px, rgba(96, 112, 126, 0.97) 4px, rgba(96, 112, 126, 0.97) 8px);
@@ -322,12 +344,20 @@ h1 {
           color: #FFFFFF;
           font-weight: 400;
           font-size: 18px; }
+          @media (max-width: 1000px) {
+            .results .result-box .result-box-caption .result-box-caption-content .result-expand {
+              position: relative;
+              top: -10px;
+              font-size: 14px; } }
         .results .result-box .result-box-caption .result-box-caption-content .result-text {
           color: #FFFFFF;
           font-weight: 600;
           font-size: 23px;
           text-transform: uppercase;
           padding: 20px; }
+          @media (max-width: 1000px) {
+            .results .result-box .result-box-caption .result-box-caption-content .result-text {
+              font-size: 19px; } }
     .results .result-box .result-img {
       width: 100%; }
   .results .result-head {
@@ -339,8 +369,9 @@ h1 {
   .results .tags {
     position: relative;
     left: 50%;
-    transform: translateX(-50%);
-    margin: 25px;
+    transform: translateX(calc(-50% - 27px));
+    margin-left: 25px;
+    margin-right: 25px;
     width: 100%;
     max-width: 800px; }
     .results .tags h3 {
@@ -351,6 +382,10 @@ h1 {
     .results .tags p {
       padding: 0;
       margin-bottom: 15px; }
+    .results .tags .feature-btn {
+      position: relative;
+      top: 5px;
+      color: #FFFFFF; }
     .results .tags .tag {
       border: 3px solid #FFFFFF;
       border-radius: 12px;
@@ -364,11 +399,19 @@ h1 {
       text-transform: lowercase;
       transition: 0.15s ease-in-out; }
     .results .tags .tag:hover {
-      color: #627a81;
-      background: #FFFFFF; }
+      border-color: #627a81; }
+    .results .tags .tag-icon {
+      font-size: 12px;
+      margin-left: 8px; }
     .results .tags .selected {
-      background: #FFFFFF;
-      color: #627a81; }
+      background: rgba(255, 255, 255, 0.2); }
+  .results .toggle-features-btn {
+    position: relative;
+    left: 50%;
+    transform: translateX(calc(-50% - 7px));
+    margin-bottom: 25px;
+    color: #FFFFFF;
+    font-size: 15px; }
 
 .steam-back {
   position: absolute;

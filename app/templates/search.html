@@ -1,7 +1,6 @@
 <html>
     <title>{{ name }}</title>
     <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
         <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,600" rel="stylesheet">
         <link rel="stylesheet" href="/static/css/bootstrap.min.css">
         <link rel="stylesheet" href="/static/css/bootstrap2-toggle.min.css">
@@ -12,8 +11,7 @@
         <h1>STEAMY REVIEWS</h1>
         <div class="overlay"></div>
         <div class="topcorner">
-            <!-- <p>Project name: {{ name }}</p>
-            <p>Student NetIDs: {{ netid }}</p> -->
+            <p>Student NetIDs: bg379, hju3, nsk43, pmc85</p>
         </div>
         <div class="steam-menu">
             {% if username %}
@@ -75,7 +73,7 @@
                 </h2>
             {% endif %}
             {% if no_such_app_id is defined %}
-                <h2 class="suggested">Sorry, but this app ID is not in our database! Don't hesitate to get in touch with us and will consider adding it.</h2>
+                <h2 class="suggested">Sorry, but this app ID is not in our database! Don't hesitate to get in touch with us and we'll consider adding it.</h2>
             {% endif %}
         </div>
 
@@ -84,9 +82,20 @@
             <div class="container-fluid results">
                 {% if library_vector is defined %}
                     <h2 class="result-head">Showing our top picks based on your library</h2>
+                    <button class="btn toggle-features-btn" type="button" data-toggle="collapse" data-target="#tags-collapse" aria-expanded="false" aria-controls="tags-collapse">Show features to add/remove from suggestions</button>
+                    <div class="collapse tags text-center" id="tags-collapse" data-tags="{{ library_feature_names }}">
+                        <h3 class="unselectable">Tags generated from game reviews</h3>
+                        <p class="unselectable">Click to remove from results</p>
+                    </div>
                 {% else %}
-                    <h2 class="result-head">Showing results for: <a href="{{ query_game.steam_url() }}"><span class="emphasize">{{ query_game.name }}</span></a></h2>
+                    <h2 class="result-head">Showing results for: <a target="_blank" href="{{ query_game.steam_url() }}"><span class="emphasize">{{ query_game.name }}</span></a></h2>
+                    <button class="btn toggle-features-btn" type="button" data-toggle="collapse" data-target="#tags-collapse" aria-expanded="false" aria-controls="tags-collapse">Show features to add/remove from suggestions</button>
+                    <div class="collapse tags text-center" id="tags-collapse" data-tags="{{ query_game.best_feature_names(json_format=True) }}">
+                        <h3 class="unselectable">Tags generated from game reviews</h3>
+                        <p class="unselectable">Click to remove from results</p>
+                    </div>
                 {% endif %}
+
                 <div class="row no-gutter no-vector-ranking">
                 {% for score, ranked_game in ranking %}
                     <div class="col-sm-4">
@@ -100,8 +109,8 @@
                              {% else %}
                              data-features="{{ ranked_game.intersect_features(query_game, True) | safe }}"
                              {% endif %}
-                             data-steam-url="{{ ranked_game.steam_url() }}">
-                            <img src="{{ ranked_game.steam_image_url() }}" class="result-img">
+                             data-steam-url="{{ ranked_game.steam_url() }}"
+                             style="background-image: url({{ ranked_game.steam_image_url() }});">
                             <div class="result-box-caption">
                                 <div class="result-box-caption-content">
                                     <div class="result-text">
@@ -127,8 +136,8 @@
                                  data-score="{{ score }}"
                                  data-tags='{{ ranked_game.tags_json(True, True) | safe }}'
                                  data-features="{{ ranked_game.intersect_features(query_game, True) | safe }}"
-                                 data-steam-url="{{ ranked_game.steam_url() }}">
-                                <img src="{{ ranked_game.steam_image_url() }}" class="result-img">
+                                 data-steam-url="{{ ranked_game.steam_url() }}"
+                                 style="background-image: url({{ ranked_game.steam_image_url() }});">
                                 <div class="result-box-caption">
                                     <div class="result-box-caption-content">
                                         <div class="result-text">
@@ -155,6 +164,9 @@
             <div class="details-body">
             <!-- <img class="details-img"> -->
             <h1 class="details-title unselectable"></h1>
+            <p class="details-score text-center">
+                Suggestion score: <span class="details-score-num">98.7</span>
+            </p>
             <p class="text-center">
                 <a target="_blank" class="details-btn btn details-link">View on Steam</a>
                 <a class="details-btn btn details-query">Use game as query</a>
@@ -209,8 +221,10 @@
             var userAccount = "{{ username }}";
             var vector_toggle = "on";
             var currentGameTitle, toggle_modal;
+            var currentAppID;
             {% if query_game is defined %}
                 currentGameTitle = "{{ query_game.name }}";
+                currentAppID = "{{ query_game.app_id }}";
                 var currentGameFeatureNames = {{ query_game.best_feature_names(True) | safe }};
                 var currentGameFeatures = {{ query_game.best_features(True) | safe }};
                 currentGameFeatures = currentGameFeatures.map(Math.log);
