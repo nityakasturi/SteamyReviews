@@ -66,7 +66,7 @@ def main():
     parser.add_argument("-i", "--num-iterations", dest="num_iterations", type=int, default=1000,
                         help="Number of Mallet iterations")
 
-    parser.add_argument("--token-regex", dest="token_regex", type=str, default="\\p{L}+",
+    parser.add_argument("--token-regex", dest="token_regex", type=str, default="\\p{L}[\\p{L}\\p{P}]+\\p{L}",
                         help="Regex to use when tokenizing documents")
 
     args = parser.parse_args()
