@@ -14,10 +14,7 @@ app = Flask(__name__)
 app.config.from_object(os.environ["APP_SETTINGS"])
 
 import nltk
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download("punkt")
+nltk.download("punkt")
 
 # DB
 db = boto3.resource("dynamodb",
