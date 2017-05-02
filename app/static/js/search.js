@@ -15,11 +15,10 @@ $(document).ready(function() {
             off: 'No'
         });
         $('#user-vector-toggle').bootstrapToggle(vector_toggle);
-    }
-    else
+    } else
         $(".user-login").fadeIn(150).css("display", "inline-block");
 
-    if (currentGameTitle !== undefined){
+    if (currentGameTitle !== undefined) {
         $('html, body').animate({
             scrollTop: $(".global-search").offset().top - 15
         }, 400);
@@ -28,12 +27,13 @@ $(document).ready(function() {
         var queryString = window.location.search;
         queryString = queryString.substring(1);
 
-        var parseQueryString = function( queryString ) {
-            var params = {}, queries, temp, i, l;
+        var parseQueryString = function(queryString) {
+            var params = {},
+                queries, temp, i, l;
             // Split into key/value pairs
             queries = queryString.split("&");
             // Convert the array of strings into an object
-            for ( i = 0, l = queries.length; i < l; i++ ) {
+            for (i = 0, l = queries.length; i < l; i++) {
                 temp = queries[i].split('=');
                 params[temp[0]] = decodeURI(temp[1]);
             }
@@ -47,11 +47,11 @@ $(document).ready(function() {
         }
 
         var tags_div = $(".tags");
-		var search_tags = tags_div.data("tags");
-		for (var key in search_tags) {
+        var search_tags = tags_div.data("tags");
+        for (var key in search_tags) {
             if (!search_tags.hasOwnProperty(key)) continue;
             var value = search_tags[key];
-            if (unselected !== null && unselected.indexOf(value) !== -1){
+            if (unselected !== null && unselected.indexOf(value) !== -1) {
                 tags_div.append("<p class='tag'>" + value +
                     "<span class='glyphicon glyphicon-remove tag-icon' aria-hidden='true'></span></p>");
 
@@ -67,7 +67,7 @@ $(document).ready(function() {
                 tags_div.append("<p class='tag selected'>" + value +
                     "<span class='glyphicon glyphicon-ok tag-icon' aria-hidden='true'></span></p>");
             }
-		}
+        }
         tags_div.append("<button type='submit' class='btn btn-desc feature-btn' style='display: block; margin: 0 auto;'>Apply changes</button>")
 
     }
@@ -116,83 +116,107 @@ $(document).ready(function() {
         location.reload();
     });
 
-    $(".result-box").click(function() {
-        var resultBox = $(this);
-        var updateDetails = function() {
-            var gameTitle = resultBox.data("title");
-            $(".details-title").text(gameTitle);
-            $(".details-score-num").text((resultBox.data("score") * 100).toFixed(1) + "%");
-            $(".details-img").attr("src", resultBox.children(".result-img").attr("src"));
-            $(".details-link").attr("href", resultBox.data("steam-url"));
-
-            var tagsDiv = $(".details-tags");
-            tagsDiv.empty();
-            $.each(JSON.parse(atob(resultBox.data("tags"))), function(index, tag) {
-                tagsDiv.append("<p class='tag unselectable'>" + tag + "</p>");
+    var userVectorToggle = $('#user-vector-toggle');
+    userVectorToggle.change(function() {
+        if (userVectorToggle.prop('checked')) {
+            $('.no-vector-ranking').fadeOut(150, function() {
+                $('.vector-ranking').fadeIn(150);
             });
-            selectedAppID = resultBox.data("app-id");
-
-            var gameVector = resultBox.data("features").map(Math.log);
-
-            for(idx = 0; idx < removedFeaturesIdx.length; idx += 1) {
-                var feature = removedFeaturesIdx[idx];
-                gameVector = gameVector.slice(0, feature)
-                    .concat(gameVector.slice(feature + 1, gameVector.length));
-            }
-
-            var data = {
-                labels: currentGameFeatureNames,
-                datasets: [{
-                    label: gameTitle,
-                    backgroundColor: "rgba(255,99,132,0.2)",
-                    borderColor: "rgba(255,99,132,1)",
-                    pointBackgroundColor: "rgba(255,99,132,1)",
-                    pointBorderColor: "#fff",
-                    pointHoverBackgroundColor: "#fff",
-                    pointHoverBorderColor: "rgba(255,99,132,1)",
-                    data: gameVector
-                }, {
-                    label: currentGameTitle,
-                    backgroundColor: "rgba(90, 179, 206, 0.2)",
-                    borderColor: "rgba(90, 179, 206, 1)",
-                    pointBackgroundColor: "rgba(90, 179, 206, 1)",
-                    pointBorderColor: "#fff",
-                    pointHoverBackgroundColor: "#fff",
-                    pointHoverBorderColor: "rgba(90, 179, 206, 1)",
-                    data: currentGameFeatures
-                }]
-            };
-
-            if (detailsRadarChart !== undefined)
-                detailsRadarChart.destroy();
-
-            detailsRadarChart = new Chart(attributeChart, {
-                type: 'radar',
-                data: data,
-                draggable: true,
-                options: {
-                    legend: {
-                        position: 'bottom'
-                    },
-                    scale: {
-                        ticks: {
-                            display: false
-                        }
-                    },
-                    tooltips: {
-                        enabled: false
-                    }
-                }
-            });
-
-            $(".details-overlay").animate({
-                width: '400px'
-            }, 300, function() {
-                $(".details-content-wrapper").fadeIn(150);
-                detailsExpanded = true;
+        } else {
+            $('.vector-ranking').fadeOut(150, function() {
+                $('.no-vector-ranking').fadeIn(150);
             });
         };
+        updateDetails()
+    })
 
+    var resultBox = $(".result-box");
+    var updateDetails = function() {
+        var gameTitle = resultBox.data("title");
+        $(".details-title").text(gameTitle);
+        $(".details-score-num").text((resultBox.data("score") * 100).toFixed(1) + "%");
+        $(".details-img").attr("src", resultBox.children(".result-img").attr("src"));
+        $(".details-link").attr("href", resultBox.data("steam-url"));
+
+        var tagsDiv = $(".details-tags");
+        tagsDiv.empty();
+        $.each(JSON.parse(atob(resultBox.data("tags"))), function(index, tag) {
+            tagsDiv.append("<p class='tag unselectable'>" + tag + "</p>");
+        });
+        selectedAppID = resultBox.data("app-id");
+
+        var gameVector = resultBox.data("features").map(Math.log);
+
+        for (idx = 0; idx < removedFeaturesIdx.length; idx += 1) {
+            var feature = removedFeaturesIdx[idx];
+            gameVector = gameVector.slice(0, feature)
+                .concat(gameVector.slice(feature + 1, gameVector.length));
+        }
+
+        var queryVector;
+        if (offsetVector !== null && userVectorToggle.prop('checked')) {
+            queryVector = offsetVector;
+        } else {
+            queryVector = gameVector;
+        }
+
+        console.log(queryVector);
+
+        var data = {
+            labels: currentGameFeatureNames,
+            datasets: [{
+                label: gameTitle,
+                backgroundColor: "rgba(255,99,132,0.2)",
+                borderColor: "rgba(255,99,132,1)",
+                pointBackgroundColor: "rgba(255,99,132,1)",
+                pointBorderColor: "#fff",
+                pointHoverBackgroundColor: "#fff",
+                pointHoverBorderColor: "rgba(255,99,132,1)",
+                data: gameVector
+            }, {
+                label: currentGameTitle,
+                backgroundColor: "rgba(90, 179, 206, 0.2)",
+                borderColor: "rgba(90, 179, 206, 1)",
+                pointBackgroundColor: "rgba(90, 179, 206, 1)",
+                pointBorderColor: "#fff",
+                pointHoverBackgroundColor: "#fff",
+                pointHoverBorderColor: "rgba(90, 179, 206, 1)",
+                data: queryVector
+            }]
+        };
+
+        if (detailsRadarChart !== undefined)
+            detailsRadarChart.destroy();
+
+        detailsRadarChart = new Chart(attributeChart, {
+            type: 'radar',
+            data: data,
+            draggable: true,
+            options: {
+                legend: {
+                    position: 'bottom'
+                },
+                scale: {
+                    ticks: {
+                        display: false
+                    }
+                },
+                tooltips: {
+                    enabled: false
+                }
+            }
+        });
+
+        $(".details-overlay").animate({
+            width: '400px'
+        }, 300, function() {
+            $(".details-content-wrapper").fadeIn(150);
+            detailsExpanded = true;
+        });
+    };
+
+
+    resultBox.click(function() {
         if (detailsExpanded) {
             var detailsBody = $(".details-body");
             detailsBody.fadeOut(200, function() {
@@ -213,9 +237,8 @@ $(document).ready(function() {
                 glyphicon.addClass("glyphicon-remove");
                 glyphicon.fadeIn(125);
             });
-            
-        }
-        else {
+
+        } else {
             tag.addClass("selected");
             glyphicon.fadeOut(125, function() {
                 glyphicon.addClass("glyphicon-ok");
@@ -230,7 +253,7 @@ $(document).ready(function() {
         var array = [];
         tagList.each(function() {
             var tag = $(this);
-            if (! tag.hasClass("selected"))
+            if (!tag.hasClass("selected"))
                 array.push($(this).text());
         });
 
@@ -263,17 +286,4 @@ $(document).ready(function() {
 
         btn.blur();
     });
-
-    $('#user-vector-toggle').change(function() {
-        if($(this).prop('checked')) {
-            $('.no-vector-ranking').fadeOut(150, function() {
-                $('.vector-ranking').fadeIn(150);
-            });
-        }
-        else {
-            $('.vector-ranking').fadeOut(150, function() {
-                $('.no-vector-ranking').fadeIn(150);
-            });
-        }
-    })
 });

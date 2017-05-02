@@ -79,14 +79,19 @@ def render_ranking_page(game, only_library_vector, removed_features=None):
         app.logger.debug("Results for " + game.normalized_name + ": " + str(base_ranking))
 
         user_ranking = None
+        offset_vector = None
         if g.library_vector is not None:
             app.logger.info("User is logged in. Also getting vector ranking.")
+            # I know we end up computing this twice, but that's the problem with running the query
+            # with one vector and displaying another
+            offset_vector = json.dumps(game.offset_vector(g.library_vector).tolist())
             user_ranking = do_cosine_sim(game, g.library_vector, removed_features)
             app.logger.debug("Results for " + game.normalized_name + ": " + str(user_ranking))
 
         return render_search_template(query_game=game,
                                       ranking=base_ranking,
-                                      user_ranking=user_ranking)
+                                      user_ranking=user_ranking,
+                                      offset_vector=offset_vector)
 
 def render_search_template(**kwargs):
     for k in DEFAULT_KWARGS:

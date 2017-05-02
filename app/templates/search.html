@@ -249,6 +249,13 @@
                 currentGameFeatures = currentGameFeatures.map(Math.log);
                 vector_toggle = "off";
             {% endif %}
+
+            {% if offset_vector is defined and offset_vector != None %}
+                var offsetVector = {{ offset_vector | safe }};
+                offsetVector = offsetVector.map(Math.log);
+            {% else %}
+                var offsetVector = null;
+            {% endif %}
         </script>
         <script src="/static/js/search.js"></script>
     </body>

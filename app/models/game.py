@@ -299,7 +299,13 @@ class Game(object):
         else:
             return to_return
 
-    def get_ranking(self, library_vector, removed_features, bias_weight=0.3):
+    def offset_vector(self, library_vector, library_vector_weight=0.3):
+        new_vector = self.vector().copy()
+        new_vector += library_vector * library_vector_weight
+        return normalize_matrix(new_vector)[0]
+
+
+    def get_ranking(self, library_vector, removed_features):
         if self.app_id not in Game.__app_id_to_index:
             raise GameNotFoundException(self.app_id)
         if library_vector is None and len(removed_features) == 0:
@@ -309,10 +315,12 @@ class Game(object):
                     for score, app_index in zip(scores, ranking)
                     if app_index != self.__app_index]
         else:
-            new_vector = self.vector().copy()
-            if library_vector is not None:
-                 new_vector += library_vector * bias_weight
-            return Game.compute_ranking_for_vector(new_vector,
+            query_vector = None
+            if library_vector is None:
+                query_vector = self.vector()
+            else:
+                query_vector =  self.offset_vector(library_vector)
+            return Game.compute_ranking_for_vector(query_vector,
                                                    removed_features=removed_features,
                                                    app_id=self.app_id)
 
