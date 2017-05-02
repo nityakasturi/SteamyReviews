@@ -86,7 +86,11 @@ a:hover {
 .autocomplete-suggestions strong {
 	font-weight: 600;
 }
-
+.atari-a {
+	position: relative;
+	top: -3px;
+	height: 26px;
+}
 body {
 	background: $background;
 	color: $white;
