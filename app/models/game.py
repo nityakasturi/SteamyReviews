@@ -299,10 +299,13 @@ class Game(object):
         else:
             return to_return
 
-    def offset_vector(self, library_vector, library_vector_weight=0.3):
-        new_vector = self.vector().copy()
-        new_vector += library_vector * library_vector_weight
-        return normalize_matrix(new_vector)[0]
+    def offset_vector(self, library_vector, library_vector_weight=0.3, only_best_features=False):
+        new_vector = self.vector().copy() + library_vector * library_vector_weight
+        new_vector = normalize_matrix(new_vector)[0]
+        if only_best_features:
+            return new_vector[self.__best_feature_indices]
+        else:
+            return new_vector
 
 
     def get_ranking(self, library_vector, removed_features):

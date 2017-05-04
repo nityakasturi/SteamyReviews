@@ -84,7 +84,8 @@ def render_ranking_page(game, only_library_vector, removed_features=None):
             app.logger.info("User is logged in. Also getting vector ranking.")
             # I know we end up computing this twice, but that's the problem with running the query
             # with one vector and displaying another
-            offset_vector = json.dumps(game.offset_vector(g.library_vector).tolist())
+            offset_vector = json.dumps(game.offset_vector(g.library_vector,
+                                                          only_best_features=True).tolist())
             user_ranking = do_cosine_sim(game, g.library_vector, removed_features)
             app.logger.debug("Results for " + game.normalized_name + ": " + str(user_ranking))
 
