@@ -8,7 +8,6 @@ class Config(object):
     CSRF_ENABLED = True
     CSRF_SESSION_KEY = "secret"
     SECRET_KEY = "not_this"
-    SQLALCHEMY_DATABASE_URI = os.environ["DATABASE_URL"]
     DYNAMO_REGION = os.environ.get("DYNAMO_REGION", "us-west-2")
     DYNAMO_DATABASE_URI = os.environ.get("DYNAMO_URL", "http://localhost:8000")
     GAME_CACHE_SIZE = os.environ.get("GAME_CACHE_SIZE", 1000)
