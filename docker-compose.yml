@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-python
-    command: python run.py
+    command: gunicorn -w 4 app:app
     ports:
       - "5000:5000"
     volumes:
@@ -13,12 +13,12 @@ services:
       - dynamodb
     environment:
       - APP_SETTINGS=config.DevelopmentConfig
-      - DATABASE_URL=postgres://test:test@postgres:5432/test
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
-      - DYNAMO_URL=http://dynamodb:8000
+      - DYNAMO_URL=https://dynamodb.us-west-2.amazonaws.com
       - GAME_CACHE_PULL_ON_LOAD=1
       - UPDATE_GAME_ON_GET=0
+      - STEAM_API_KEY=test
   dynamodb:
     build:
       context: .

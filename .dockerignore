@@ -1,2 +1,5 @@
-data/
-mallet/
+mallet/*.mallet
+data/*
+!data/compressed_matrix.npy
+!data/steamspy_games.json
+!data/steamspy_tags.csv
