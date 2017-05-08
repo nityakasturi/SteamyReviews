@@ -15,9 +15,7 @@ services:
       - APP_SETTINGS=config.DevelopmentConfig
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
-      - DYNAMO_URL=https://dynamodb.us-west-2.amazonaws.com
-      - GAME_CACHE_PULL_ON_LOAD=1
-      - UPDATE_GAME_ON_GET=0
+      - DYNAMO_URL=http://dynamodb:8000
       - STEAM_API_KEY=test
   dynamodb:
     build:
