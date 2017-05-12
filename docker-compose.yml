@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-python
-    command: gunicorn -w 4 app:app
+    command: python run.py
     ports:
       - "5000:5000"
     volumes:
