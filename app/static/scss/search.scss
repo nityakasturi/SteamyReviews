@@ -18,6 +18,9 @@ $overlay-shadow: rgba(75, 75, 75, 0.5);
 $overlay-text: #444444;
 $white: #FFFFFF;
 
+body {
+	overflow-x: hidden;
+}
 html, body {
     height: 100%;
 }
@@ -90,6 +93,10 @@ a:hover {
 	position: relative;
 	top: -3px;
 	height: 26px;
+
+	@media (max-width: 500px){
+		height: 24px;
+	}
 }
 body {
 	background: $background;
@@ -117,6 +124,20 @@ h1 {
 	font-size: 40px;
 	font-weight: 600;
 	white-space: nowrap;
+	text-align: center;
+
+	@media (max-width: 500px){
+		font-size: 36px;
+	}
+
+	.desc {
+		font-size: 21px;
+		text-transform: uppercase;
+
+		@media (max-width: 500px){
+			font-size: 19px;
+		}
+	}
 }
 .container {
 	position: relative;
@@ -130,8 +151,30 @@ h1 {
 	position:absolute;
 	top: 15px;
 	left: 15px;
-	z-index: -1;
-	opacity: 0.5;
+	width: 400px;
+
+	.btn-info {
+		display: none;
+		background: none;
+		outline: none;
+		border: none;
+		font-size: 20px;
+		opacity: 0.5;
+		z-index: 100;
+
+		@media (max-width: 680px){
+			display: block;
+		}
+	}
+
+	p {
+		z-index: -1;
+		opacity: 0.5;
+
+		@media (max-width: 680px){
+			display: none;
+		}
+	}
 }
 .btn {
 	background: none;
@@ -157,6 +200,14 @@ h1 {
 .btn-desc {
 	display: block;
 	font-size: 11px;
+}
+.btn-submit {
+	@media (max-width: 500px){
+		position: relative;
+		left: 50%;
+		transform: translateX(-50%);
+		margin-top: 10px;
+	}
 }
 .details-overlay {
 	position: fixed;
@@ -305,6 +356,10 @@ h1 {
 	.toggle-box {
 		display: block;
 		margin-top: 30px;
+
+		@media (max-width: 500px){
+			text-align: center;
+		}
 	}
 	.toggle-text {
 		position: relative;
@@ -313,6 +368,11 @@ h1 {
 		font-size: 14px;
 		font-weight: 600;
 		text-transform: uppercase;
+
+		@media (max-width: 500px){
+			display: block;
+			margin-bottom: 10px;
+		}
 	}
 }
 #login-modal {
@@ -333,7 +393,11 @@ h1 {
 		$background-stripes-dark 8px
 	);
 }
+.modal {
+	max-width: 100% !important;
+}
 .modal-dialog {
+
 	div {
 		background: $modal-background;
 		border: 0px;
@@ -381,6 +445,11 @@ h1 {
 .searchbar {
 	padding-top: 12px;
 	width: 400px;
+
+	@media (max-width: 500px){
+		width: 100%;
+		text-align: center;
+	}
 }
 .results {
 	margin-top: -15px;
@@ -405,6 +474,11 @@ h1 {
     	background-repeat: no-repeat;
 		height: 15vw;
 		// min-height: 160px;
+
+		@media (max-width: 767px){
+			// width: 100%;
+			height: 160px;
+		}
 
 		.result-box-caption {
 			opacity: 0;
@@ -523,11 +597,12 @@ h1 {
 		margin-bottom: 25px;
 		color: $white;
 		font-size: 15px;
+		white-space: normal;
 	}
 }
 .steam-back {
 	position: absolute;
-	bottom: 59%;
+	bottom: 62%;
 	left: 50%;
 	width: 40%;
 	max-width: 400px;
@@ -535,6 +610,10 @@ h1 {
 	transform: translateX(-50%);
 	opacity: 0.7;
 	z-index: 0;
+
+	@media (max-width: 500px){
+		display: none;
+	}
 }
 .steam-menu {
 	position: absolute;
@@ -545,6 +624,12 @@ h1 {
 		margin-right: 15px;
 		// margin-right: 15px;
 		// display: block;
+
+		@media (max-width: 500px){
+			margin-right: 0px;
+			margin-bottom: 15px;
+			float: right;
+		}
 	}
 
 	.steam-account {

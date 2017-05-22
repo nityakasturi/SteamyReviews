@@ -8,6 +8,10 @@ $(document).ready(function() {
     var selectedAppID;
     var unselected = [];
 
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip()
+    });
+
     if (userAccount != "None") {
         $(".user-menu").fadeIn(150).css("display", "inline-block");
         $('#user-vector-toggle').bootstrapToggle({
@@ -185,8 +189,12 @@ $(document).ready(function() {
                 }
             });
 
+            var newWidth = '400px';
+            if($(window).width() < 400)
+                newWidth = '100%';
+
             $(".details-overlay").animate({
-                width: '400px'
+                width: newWidth
             }, 300, function() {
                 $(".details-content-wrapper").fadeIn(150);
                 detailsExpanded = true;
