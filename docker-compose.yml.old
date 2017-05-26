@@ -9,8 +9,8 @@ services:
       - "5000:5000"
     volumes:
       - .:/root/SteamyReviews
-    networks:
-      - common-net
+    links:
+      - dynamodb
     environment:
       - APP_SETTINGS=config.DevelopmentConfig
       - AWS_ACCESS_KEY_ID=test
@@ -25,7 +25,3 @@ services:
       - "8000"
     volumes:
       - /var/dynamodb
-    networks:
-      - common-net
-networks:
-  common-net:
