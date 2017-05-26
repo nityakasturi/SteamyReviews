@@ -1,6 +1,8 @@
 <html>
     <title>{{ name }}</title>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
         <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,600" rel="stylesheet">
         <link rel="stylesheet" href="/static/css/bootstrap.min.css">
         <link rel="stylesheet" href="/static/css/bootstrap2-toggle.min.css">
@@ -10,11 +12,8 @@
     </head>
     <body>
         <img class="steam-back" src="/static/steam.png">
-        <h1>STE<img class="atari-a" src="/static/atari.png">MY REVIEWS</h1>
+        <h1>STE<img class="atari-a" src="/static/atari.png">MY REVIEWS<br><span class="desc">Game recommendation engine</span></h1>
         <div class="overlay"></div>
-        <div class="topcorner">
-            <p>Student NetIDs: bg379, hju3, nsk43, pmc85</p>
-        </div>
         <div class="steam-menu">
             {% if username %}
                 <a class="btn btn-info generic-search-btn" href="/?only_library_vector=on">
@@ -23,18 +22,24 @@
                 </a>
             {% endif %}
             <button class="btn btn-info steam-account user-login" data-toggle="modal" data-target="#login-modal">
-                <span>Login to Steam</span>
+                <span>Use Steam ID</span>
                 <span class="btn-desc">For personalized suggestions</span>
             </button>
             <div class="dropdown steam-account user-menu">
                 <button class="btn btn-info" id="user-menu-dropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <span class="btn-desc">Logged in as</span>
+                    <span class="btn-desc">Using account</span>
                     <span>{{ username }} <span class="caret"></span></span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="user-menu-dropdown">
-                    <li><a class="logout unselectable">Logout</a></li>
+                    <li><a class="logout unselectable">Exit account</a></li>
                 </ul>
             </div>
+        </div>
+        <div class="topcorner">
+            <button type="button" class="btn-info" data-toggle="tooltip" data-placement="right" title="Data collected for this application is for academic purposes only. Built at Cornell University by bg379, hju3, nsk43, and pmc85." style="z-index" 1000;"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span></button>
+            <p>Data collected for this application is for academic purposes only.
+                <br>Built at Cornell University by bg379, hju3, nsk43, and pmc85.
+                <br>Contact <a class="" href="mailto:pmc85@cornell.edu">pmc85@cornell.edu</a></p>
         </div>
         <div class="container">
             <form class="form-inline global-search">
@@ -52,7 +57,7 @@
                     {% endif %}
                 </div>
 
-                <button type="submit" class="btn btn-info">Submit</button>
+                <button type="submit" class="btn btn-info btn-submit">Submit</button>
 
                 {% macro librarytoggle(value) -%}
                     <div class="toggle-box" style="display: {{ value }}">
@@ -188,12 +193,12 @@
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span class="glyphicon glyphicon-remove close-button" aria-hidden="true"></span>
                         </button>
-                        <h4 class="modal-title unselectable">Steam login</h4>
+                        <h4 class="modal-title unselectable">Steam Account</h4>
                     </div>
                     <form action="/steam/login" method="post">
                     <div class="modal-body">
-                        <p>Logging into Steam helps us personalize search results and suggest games based on your library.
-                        <br>We don't store any of your data on our server. This site is not associated with Valve Corp.</p>
+                        <p>Data from your Steam account helps us personalize search results and suggest games based on your library.
+                        We don't store any of your data on our server, and don't require a login because we only use publicly accessible information. This site is not associated with Valve Corp.</p>
                         {% if invalid_login is defined and invalid_login %}
                             <p class="invalid-login">
                                 Invalid ID. Please try again.
@@ -204,7 +209,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-default login-btn" >Login</button>
+                        <button type="submit" class="btn btn-default login-btn" >Submit</button>
                     </div>
                     </form>
                 </div>
